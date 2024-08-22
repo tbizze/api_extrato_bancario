@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    if (app()->isLocal()) {
+        // Para fins de teste, faça login como usuário com ID 1 no desenvolvimento local.
+        auth()->loginUsingId(1);
+
+        return to_route('dashboard');
+    }
+
     return view('welcome');
 });
 
