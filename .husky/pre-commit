@@ -17,7 +17,10 @@ STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep ".php\{0,1
 
 for FILE in $STAGED_FILES
 do
-    ./vendor/bin/pint "${FILE}" > /dev/null >&1;
+    # Dessa forma exibe o que foi corrigido na formatação.
+    ./vendor/bin/pint "${FILE}"; 
+    # Dessa forma não exibe.
+    #./vendor/bin/pint "${FILE}" > /dev/null >&1;
     git add "${FILE}";
 done;
 
