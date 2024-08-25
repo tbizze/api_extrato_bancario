@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\{HomeController, ProfileController, TransparenciaController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,5 +34,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Testes para requisições a API de livre acesso.
+// Não faz uso de chave (token) de segurança, nem certificado digital.
+Route::get('api/get', [HomeController::class, 'getApi']);
+Route::get('api/post', [HomeController::class, 'postApi']);
+
+// exemplos de como consumir a API de dados do Portal da Transparência do Governo Federal.
+// faz uso de chave (token) de segurança no HEADER.
+Route::get('api-de-dados/imoveis', [TransparenciaController::class, 'imoveis']);
+Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
 
 require __DIR__ . '/auth.php';
