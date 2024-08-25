@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\{HomeController, ProfileController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,5 +34,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Testes para requisições a API de livre acesso.
+// Não faz uso de chave (token) de segurança, nem certificado digital.
+Route::get('api/get', [HomeController::class, 'getApi']);
+Route::get('api/post', [HomeController::class, 'postApi']);
 
 require __DIR__ . '/auth.php';
