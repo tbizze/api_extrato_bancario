@@ -29,7 +29,7 @@ class SantanderService
 
     // Este método envia as credenciais para o endpoint de autenticação do OAuth.
     // Retorna o token de acesso.
-    public function getAccessToken(): mixed
+    public function getAccessToken(): string
     {
         try {
             $response = $this->client->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
