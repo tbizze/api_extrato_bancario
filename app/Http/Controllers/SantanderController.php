@@ -14,11 +14,20 @@ class SantanderController extends Controller
         $this->santanderService = $santanderService;
     }
 
-    // Método para obter TOKEN
+    // Método para obter TOKEN DE ACESSO via autenticação OAuth.
     public function getToken(): JsonResponse
     {
-        $token = $this->santanderService->getAccessToken();
+        $token = $this->santanderService->generateAccessToken();
+        //$token = $this->santanderService->getAccessToken();
 
         return response()->json(['access_token' => $token]);
+    }
+
+    // Método para requisição do SALDO à API Saldo e Extrato do Santander.
+    public function getSaldo(): JsonResponse
+    {
+        $balance = $this->santanderService->getAccountSaldo();
+
+        return response()->json($balance);
     }
 }
