@@ -9,7 +9,7 @@ class SantanderToken extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['access_token', 'expires_in', 'expires_at', 'not-before-policy', 'session_state'];
+    protected $fillable = ['type_token', 'access_token', 'expires_in', 'expires_at', 'not-before-policy', 'session_state'];
 
     protected $casts = [
         'expires_at' => 'datetime',

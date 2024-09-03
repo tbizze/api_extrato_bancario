@@ -61,12 +61,6 @@ class SantanderService
             // Armazena o token de acesso e sua data de expiração.
             $this->storeAccessToken($data);
 
-            // Coloca na propriedade da classe, o access_token e o expires_in.
-            //$this->accessToken = $data['access_token'];
-            //$this->expiresToken = $this->expireToken();
-
-            dump($data);
-
             return $data['access_token'];
         } catch (RequestException $e) {
             // Registre ou trate o erro, conforme necessário.
@@ -81,6 +75,7 @@ class SantanderService
     {
         // Busca último token emitido.
         $data = SantanderToken::query()
+            ->where('type_token', '=', env('SANTANDER_AMBIENTE'))
             ->orderBy('id', 'DESC')->first();
 
         if ($data) {
@@ -122,11 +117,11 @@ class SantanderService
         return $expire;
     }
 
-    // Implemente seu método para armazenar o token de acesso e sua data de expiração
-    // No seu banco de dados, por exemplo.
+    // Método para armazenar o token de acesso criado no BD.
     private function storeAccessToken(mixed $token): void
     {
         SantanderToken::create([
+            'type_token'        => env('SANTANDER_AMBIENTE'), // Especifica qual foi o ambiente que gerou o token.
             'access_token'      => $token['access_token'],
             'expires_in'        => $token['expires_in'],
             'expires_at'        => $this->expireToken(),
@@ -135,17 +130,16 @@ class SantanderService
         ]);
     }
 
-    // Busca Saldo.
+    // Busca Saldo. Deve enviar em Token válido e o ClientId.
     public function getAccountSaldo(): mixed
     {
         try {
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
-            dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
-            // Realiza a requisição com o token.
-            //$response = $this->client->get($this->base_uri . "/banks/90400888081550/balances/2194.000130010584", [
-            //$response = $this->client->get($this->base_uri . '/banks/90400888000142/balances/0000.000011112222', [
+            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
+
+            // Faz a requisição com o Token e ClientId.
             $response = $this->client->get($this->base_uri . '/banks/90400888081550/balances/2194.000130010584', [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
@@ -153,12 +147,10 @@ class SantanderService
                 ],
             ]);
 
-            //dump($response);
-
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             // Retorna a mensagem de erro.
-            dd('Erro ao submeter requisição endpoint saldo:', $e);
+            dd('Erro ao submeter requisição saldo:', $e);
         }
     }
 }

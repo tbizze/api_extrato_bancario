@@ -12,11 +12,12 @@ return new class () extends Migration {
     {
         Schema::create('santander_tokens', function (Blueprint $table) {
             $table->id();
-            $table->text('access_token')->nullable();
-            $table->integer('expires_in')->nullable();
-            $table->dateTime('expires_at')->nullable();
+            $table->string('type_token');
+            $table->text('access_token');
+            $table->integer('expires_in');
+            $table->dateTime('expires_at');
             $table->string('not_before_policy')->nullable();
-            $table->string('session_state')->nullable();
+            $table->string('session_state');
             $table->timestamps();
         });
     }
