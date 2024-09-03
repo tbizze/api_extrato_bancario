@@ -157,16 +157,18 @@ class SantanderService
 
     // Listagem de Extrato. Deve enviar em Token válido e o ClientId.
     // Endpoint: GET -> '/banks/{bank_id}/statements/{statement_id}'
+    //               -> '/banks/{bank_id}/statements/{statement_id}?initialDate=2022-10-01&finalDate=2022-10-30&_offset=1&_limit=50'
     public function getAccountExtrato(): mixed
     {
         try {
             // Obtém um token válido.
-            $token = $this->getValidAccessToken();
+            $token  = $this->getValidAccessToken();
+            $params = ''; //'?initialDate=2024-08-01&finalDate=2024-08-30&_offset=1&_limit=50';
 
             //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
-            $response = $this->client->get($this->base_uri . '/banks/90400888081550/statements/2194.000130010584', [
+            $response = $this->client->get($this->base_uri . '/banks/90400888081550/statements/2194.000130010584' . $params, [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
@@ -181,7 +183,7 @@ class SantanderService
     }
 
     // Listagem de Contas. Deve enviar em Token válido e o ClientId.
-    // Endpoint: GET -> '/banks/{bank_id}/accounts'
+    // Endpoint: GET -> '/banks/{bank_id}/accounts?_offset={number}&_limit={number}'
     public function getAccountsList(): mixed
     {
         try {
