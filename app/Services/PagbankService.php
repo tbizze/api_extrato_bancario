@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class PagbankService
 {
@@ -10,28 +11,73 @@ class PagbankService
 
     protected string $baseUrl;
 
+    protected string $clientId;
+
     protected string $token;
 
+    // Método construtor do client.
+    // Ao instanciar, deve enviar o token através da chave 'authorization' no headers.
     public function __construct()
     {
-        $this->client  = new Client();
-        $this->baseUrl = env('TRANSPARENCIA_BASE_URL');
-        $this->token   = env('TRANSPARENCIA_TOKEN');
+        $this->baseUrl  = env('PAGBANK_BASE_URI');
+        $this->clientId = env('PAGBANK_CLIENT_ID');
+        $this->token    = env('PAGBANK_TOKEN');
+
+        $this->client = new Client();
+    }
+
+    // Método para validar o token.
+    // Deve enviar via parâmetros de URL o clientId e o token.
+    public function checkToken(): mixed
+    {
+        try {
+            $response = $this->client->GET($this->baseUrl . '/users/' . $this->clientId . '/token/' . $this->token, [
+                'headers' => [
+                    'accept'        => 'application/json',
+                    'authorization' => 'Bearer ' . $this->token, // Anexa o token recebido no credenciamento.
+                ],
+            ]);
+
+            $data         = json_decode($response->getBody(), true);
+            $codeResponse = $data['code'];
+
+            if ($codeResponse != 200) {
+                /* Retorna um JSON com:
+                   'code' => 404
+                   'codeValue' => NOT FOUND
+                   'message' => 'Os parâmetros informados não são válidos.'
+                 */
+                return response()->json(['error' => 'Token inválido.', 'message' => $data['code'] . ' ' . $data['codeValue'] . ' -> ' . $data['message']], 400);
+            }
+
+            /* Retorna um JSON com:
+                'code' => 404
+                'codeValue' => NOT FOUND
+                'message' => 'Os parâmetros informados não são válidos.'
+            */
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            // Registre ou trate o erro, conforme necessário.
+            return response()->json(['error' => 'Falha na requisição.', 'message' => $e->getMessage()], 400);
+        }
     }
 
     // Busca Extrato
-    // Obrigatório pagina=1.
     public function getExtrato(): mixed
     {
-        $response = $this->client->get(
-            $this->baseUrl . '?dataMovimento=2024-08-27&pageNumber=1&pageSize=10&tipoMovimento=2',
-            [
-                'headers' => [
-                    'chave-api-dados' => env('TRANSPARENCIA_TOKEN'),
-                ],
-            ]
-        );
+        $credentials = base64_encode("$this->clientId:$this->token");
 
-        return json_decode($response->getBody(), true);
+        try {
+            $response = $this->client->GET($this->baseUrl . '/2.01/movimentos?dataMovimento=2024-08-27&pageNumber=1&pageSize=10&tipoMovimento=2', [
+                'headers' => [
+                    'Authorization' => "Basic $credentials",
+                ],
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            // Registre ou trate o erro, conforme necessário.
+            return response()->json(['error' => 'Falha na requisição.', 'message' => $e->getMessage()]);
+        }
     }
 }
