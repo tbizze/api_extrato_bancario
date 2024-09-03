@@ -28,7 +28,7 @@ class PagbankController extends Controller
     // Implementação do método para buscar extrato do Pagbank
     public function getExtrato(): JsonResponse
     {
-        $dados = $this->pagbankService->getExtrato();
+        $dados = $this->pagbankService->getExtrato(2, '2024-06-22');
 
         return response()->json(['response' => $dados]);
         //return response()->json(['message' => 'Extrato obtido com sucesso!']);

@@ -63,17 +63,20 @@ class PagbankService
     }
 
     // Busca Extrato
-    public function getExtrato(): mixed
+    public function getExtrato(int $tipo, string $data): mixed
     {
-        $credentials = base64_encode("$this->clientId:$this->token");
+        $credentials   = base64_encode("$this->clientId:$this->token");
+        $tipoExtrato   = 1;
+        $dataMovimento = '2024-08-26';
 
         try {
-            $response = $this->client->GET($this->baseUrl . '/2.01/movimentos?dataMovimento=2024-08-27&pageNumber=1&pageSize=10&tipoMovimento=2', [
+            $response = $this->client->GET($this->baseUrl . "/2.01/movimentos?tipoMovimento=$tipo&dataMovimento=$data&pageNumber=1&pageSize=10", [
                 'headers' => [
                     'Authorization' => "Basic $credentials",
                 ],
             ]);
 
+            //dd(json_decode($response->getBody(), true));
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             // Registre ou trate o erro, conforme necessário.
