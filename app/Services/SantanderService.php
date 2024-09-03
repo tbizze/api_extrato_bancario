@@ -27,12 +27,12 @@ class SantanderService
     {
         if (env('SANTANDER_AMBIENTE') === 'sandbox') {
             $this->base_uri_oauth = env('SANTANDER_BASE_URI_SANDBOX'); // Base URI para autenticação de client.
-            $this->base_uri       = env('SANTANDER_BASE_URI_SANDBOX') . '/bank_account_information/v1'; // Base URI para requisição de client.
+            $this->base_uri       = env('SANTANDER_BASE_URI_SANDBOX') . '/bank_account_information/v1'; // Base URI para requisições de client.
             $this->client_id      = env('SANTANDER_CLIENT_ID_SANDBOX'); // Client ID para autenticação de client.
             $this->client_secret  = env('SANTANDER_CLIENT_SECRET_SANDBOX'); // ClientSecret para autenticação de cliente.
         } else {
             $this->base_uri_oauth = env('SANTANDER_BASE_URI'); // Base URI para autenticação de client.
-            $this->base_uri       = env('SANTANDER_BASE_URI') . '/bank_account_information/v1'; // Base URI para requisição de client.
+            $this->base_uri       = env('SANTANDER_BASE_URI') . '/bank_account_information/v1'; // Base URI para requisições de client.
             $this->client_id      = env('SANTANDER_CLIENT_ID'); // Client ID para autenticação de client.
             $this->client_secret  = env('SANTANDER_CLIENT_SECRET'); // ClientSecret para autenticação de cliente.
         }
@@ -130,7 +130,8 @@ class SantanderService
         ]);
     }
 
-    // Busca Saldo. Deve enviar em Token válido e o ClientId.
+    // Consulta de Saldo. Deve enviar em Token válido e o ClientId.
+    // Endpoint: GET -> '/banks/banks/{bank_id}/balances/{balance_id}'
     public function getAccountSaldo(): mixed
     {
         try {
@@ -141,6 +142,31 @@ class SantanderService
 
             // Faz a requisição com o Token e ClientId.
             $response = $this->client->get($this->base_uri . '/banks/90400888081550/balances/2194.000130010584', [
+                'headers' => [
+                    'X-Application-Key' => $this->client_id,
+                    'Authorization'     => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            // Retorna a mensagem de erro.
+            dd('Erro ao submeter requisição saldo:', $e);
+        }
+    }
+
+    // Listagem de Extrato. Deve enviar em Token válido e o ClientId.
+    // Endpoint: GET -> '/banks/banks/{bank_id}/statements/{statement_id}'
+    public function getAccountExtrato(): mixed
+    {
+        try {
+            // Obtém um token válido.
+            $token = $this->getValidAccessToken();
+
+            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
+
+            // Faz a requisição com o Token e ClientId.
+            $response = $this->client->get($this->base_uri . '/banks/90400888081550/statements/2194.000130010584', [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
