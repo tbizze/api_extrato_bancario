@@ -3,12 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\PagbankService;
-use Illuminate\Http\{JsonResponse, Request, Response};
+use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\View\View;
 
 class PagbankController extends Controller
 {
-    // Classe para tratar do Bradesco.
     protected mixed $pagbankService;
 
     // Método construtor: faz injeção de dependências,
@@ -18,40 +17,38 @@ class PagbankController extends Controller
         $this->pagbankService = $PagbankService;
     }
 
-    // Implementação do método para checar validade do token do Pagbank
+    // Método para checar validade do token do Pagbank.
     public function token(): JsonResponse
     {
+        // Chama o método da Classe de Serviço responsável por checar a validade do token do Pagbank.
         $dados = $this->pagbankService->checkToken();
 
         return response()->json(['response' => $dados]);
     }
 
-    // Implementação do método para buscar extrato do Pagbank
+    // Método para buscar extrato do Pagbank.
     public function getExtrato(Request $request): View
     {
-        if ($request->filled('date')) {
-            $date = $request->date;
-        } else {
-            $date = '2024-01-01';
-        }
+        // Define data inicial e data final a ser consultado, caso não seja informado, assume data padrão.
+        $request->filled('type') ? $type                     = $request->input('type') : $type = 2;
+        $request->filled('data_movimento') ? $data_movimento = $request->input('data_movimento') : $data_movimento = '2024-01-01';
 
-        if ($request->filled('type')) {
-            $tipo = $request->type;
-        } else {
-            $tipo = 1;
-        }
+        // Define a página a ser consultada, caso não seja informada, assume-se a primeira página.
+        $request->filled('page') ? $page = $request->input('page') : $page = 1;
 
-        $tipos = $this->getTipos();
+        // Chama o método da Classe de Serviço responsável por buscar o extrato do Pagbank.
+        $transactions = $this->pagbankService->getExtrato($type, $data_movimento, $page);
 
-        $dados = $this->pagbankService->getExtrato($tipo, $date);
-        //dd($dados['detalhes']);
+        // Busca os tipos de transações para o formulário.
+        $types = $this->getTipos();
 
-        return view('pagbank', compact(['dados', 'date', 'tipos', 'tipo']));
+        // Calcula o número de páginas para a listagem do extrato.
+        $pages = $this->getPages($transactions);
 
-        //return response()->json(['response' => $dados]);
-        //return response()->json(['message' => 'Extrato obtido com sucesso!']);
+        return view('pagbank', compact(['transactions', 'data_movimento', 'types', 'type', 'pages', 'page']));
     }
 
+    // Método para preparar os tipos de transações em array.
     public function getTipos(): mixed
     {
         $data = [
@@ -61,20 +58,17 @@ class PagbankController extends Controller
         ];
 
         return $data;
+    }
 
-        //$collection = collect($data);
-        //return response()->json($collection);
+    // Método para preparar as páginas do extrato em array.
+    public function getPages(mixed $dados): mixed
+    {
+        $pages = [];
+
+        for ($x = 1; $x <= $dados['pagination']['totalPages']; $x++) {
+            array_push($pages, ['id' => $x, 'name' => 'Página ' . $x]);
+        }
+
+        return $pages;
     }
 }
-
-/*
-array:3 [▼ // app\Http\Controllers\PagbankController.php:37
-  "detalhes" => []
-  "saldos" => []
-  "pagination" => array:4 [▼
-    "elements" => 10
-    "totalPages" => 0
-    "page" => 1
-    "totalElements" => 0
-  ]
-] */

@@ -27,7 +27,7 @@ class PagbankService
     }
 
     // Método para validar o token.
-    // Deve enviar via parâmetros de URL o clientId e o token.
+    // Deve enviar via parâmetros de URL o clientId e o oken.
     public function checkToken(): mixed
     {
         try {
@@ -62,21 +62,21 @@ class PagbankService
         }
     }
 
-    // Busca Extrato
-    public function getExtrato(int $tipo, string $data): mixed
+    // Método que faz requisição do extrato a API Edi do Pagbank.
+    // Deve passar no header a credencial. Deve concatenar como string 'clientId:token'.
+    // Deve receber como parâmetros o tipo de movimento, a data do movimento e a página.
+    public function getExtrato(int $tipo, string $data, int $page): mixed
     {
-        $credentials   = base64_encode("$this->clientId:$this->token");
-        $tipoExtrato   = 1;
-        $dataMovimento = '2024-08-26';
+        $credentials = base64_encode("$this->clientId:$this->token");
+        $params      = "tipoMovimento=$tipo&dataMovimento=$data&pageNumber=$page&pageSize=20";
 
         try {
-            $response = $this->client->GET($this->baseUrl . "/2.01/movimentos?tipoMovimento=$tipo&dataMovimento=$data&pageNumber=1&pageSize=20", [
+            $response = $this->client->GET($this->baseUrl . '/2.01/movimentos?' . $params, [
                 'headers' => [
                     'Authorization' => "Basic $credentials",
                 ],
             ]);
 
-            //dd(json_decode($response->getBody(), true));
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             // Registre ou trate o erro, conforme necessário.
