@@ -16,18 +16,63 @@ class SantanderService
 
     protected string $base_uri_oauth;
 
+    protected string $client_secret;
+
+    protected string $client_id;
+
     // Método construtor do client.
     // Ao instanciar, deve enviar certificado e também chave privada.
 
     public function __construct()
     {
-        $this->base_uri_oauth = env('SANTANDER_BASE_URI_OAUTH'); // Base URI para autenticação de client.
-        $this->base_uri       = env('SANTANDER_BASE_URI'); // Base URI para requisição de client.
+        if (env('SANTANDER_AMBIENTE') === 'sandbox') {
+            $this->base_uri_oauth = env('SANTANDER_BASE_URI_SANDBOX'); // Base URI para autenticação de client.
+            $this->base_uri       = env('SANTANDER_BASE_URI_SANDBOX') . '/bank_account_information/v1'; // Base URI para requisição de client.
+            $this->client_id      = env('SANTANDER_CLIENT_ID_SANDBOX'); // Client ID para autenticação de client.
+            $this->client_secret  = env('SANTANDER_CLIENT_SECRET_SANDBOX'); // ClientSecret para autenticação de cliente.
+        } else {
+            $this->base_uri_oauth = env('SANTANDER_BASE_URI'); // Base URI para autenticação de client.
+            $this->base_uri       = env('SANTANDER_BASE_URI') . '/bank_account_information/v1'; // Base URI para requisição de client.
+            $this->client_id      = env('SANTANDER_CLIENT_ID'); // Client ID para autenticação de client.
+            $this->client_secret  = env('SANTANDER_CLIENT_SECRET'); // ClientSecret para autenticação de cliente.
+        }
 
         $this->client = new Client([
             'cert'    => base_path(env('API_CERT_PATH')), // Anexa o certificado.
             'ssl_key' => base_path(env('API_KEY_PATH')), // Anexa a chave privada.
         ]);
+    }
+
+    // Método envia as credenciais para o endpoint de autenticação do OAuth.
+    // Retorna o token de acesso.
+    public function generateAccessToken(): string
+    {
+        try {
+            $response = $this->client->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
+                'form_params' => [
+                    'grant_type'    => 'client_credentials',
+                    'client_id'     => $this->client_id,
+                    'client_secret' => $this->client_secret,
+                ],
+            ]);
+
+            $data = json_decode($response->getBody(), true);
+
+            // Armazena o token de acesso e sua data de expiração.
+            $this->storeAccessToken($data);
+
+            // Coloca na propriedade da classe, o access_token e o expires_in.
+            //$this->accessToken = $data['access_token'];
+            //$this->expiresToken = $this->expireToken();
+
+            dump($data);
+
+            return $data['access_token'];
+        } catch (RequestException $e) {
+            // Registre ou trate o erro, conforme necessário.
+            //return response()->json(['error' => 'Failed to obtain access token', 'message' => $e->getMessage()], 403);
+            dd('Erro ao solicitar no endpoint token:', $e);
+        }
     }
 
     // Método para buscar e validar último token.
@@ -90,82 +135,30 @@ class SantanderService
         ]);
     }
 
-    // Método envia as credenciais para o endpoint de autenticação do OAuth.
-    // Retorna o token de acesso.
-    public function generateAccessToken(): string
-    {
-        try {
-            $response = $this->client->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
-                'form_params' => [
-                    'grant_type'    => 'client_credentials',
-                    'client_id'     => env('SANTANDER_CLIENT_ID'),
-                    'client_secret' => env('SANTANDER_CLIENT_SECRET'),
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-
-            // Armazena o token de acesso e sua data de expiração.
-            $this->storeAccessToken($data);
-
-            // Coloca na propriedade da classe, o access_token e o expires_in.
-            //$this->accessToken = $data['access_token'];
-            //$this->expiresToken = $this->expireToken();
-
-            dump($data);
-
-            return $data['access_token'];
-        } catch (RequestException $e) {
-            // Registre ou trate o erro, conforme necessário.
-            //return response()->json(['error' => 'Failed to obtain access token', 'message' => $e->getMessage()], 403);
-            dd('Erro ao solicitar no endpoint token:', $e);
-        }
-    }
-
     // Busca Saldo.
     public function getAccountSaldo(): mixed
     {
         try {
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
+            dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Realiza a requisição com o token.
             //$response = $this->client->get($this->base_uri . "/banks/90400888081550/balances/2194.000130010584", [
             //$response = $this->client->get($this->base_uri . '/banks/90400888000142/balances/0000.000011112222', [
             $response = $this->client->get($this->base_uri . '/banks/90400888081550/balances/2194.000130010584', [
                 'headers' => [
-                    'Authorization' => "Bearer {$token}",
+                    'X-Application-Key' => $this->client_id,
+                    'Authorization'     => "Bearer {$token}",
                 ],
             ]);
 
-            dump($response);
+            //dump($response);
 
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             // Retorna a mensagem de erro.
             dd('Erro ao submeter requisição endpoint saldo:', $e);
-        }
-    }
-
-    // Este método envia as credenciais para o endpoint de autenticação do OAuth.
-    // Retorna o token de acesso.
-    public function getAccessToken(): string
-    {
-        try {
-            $response = $this->client->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
-                'form_params' => [
-                    'grant_type'    => 'client_credentials',
-                    'client_id'     => env('SANTANDER_CLIENT_ID'),
-                    'client_secret' => env('SANTANDER_CLIENT_SECRET'),
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-
-            return $data['access_token'];
-        } catch (RequestException $e) {
-            // Registre ou trate o erro, conforme necessário.
-            return response()->json(['error' => 'Failed to obtain access token', 'message' => $e->getMessage()], 403);
         }
     }
 }
