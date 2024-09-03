@@ -46,7 +46,7 @@ Route::get('api-de-dados/imoveis', [TransparenciaController::class, 'imoveis']);
 Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
 
 // PagBank
-Route::get('pagbank/extrato', [PagbankController::class, 'getExtrato']);
+Route::get('pagbank/extrato', [PagbankController::class, 'getExtrato'])->name('extrato');
 Route::get('pagbank/token', [PagbankController::class, 'token']);
 
 require __DIR__ . '/auth.php';

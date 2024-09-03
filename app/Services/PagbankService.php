@@ -70,7 +70,7 @@ class PagbankService
         $dataMovimento = '2024-08-26';
 
         try {
-            $response = $this->client->GET($this->baseUrl . "/2.01/movimentos?tipoMovimento=$tipo&dataMovimento=$data&pageNumber=1&pageSize=10", [
+            $response = $this->client->GET($this->baseUrl . "/2.01/movimentos?tipoMovimento=$tipo&dataMovimento=$data&pageNumber=1&pageSize=20", [
                 'headers' => [
                     'Authorization' => "Basic $credentials",
                 ],
