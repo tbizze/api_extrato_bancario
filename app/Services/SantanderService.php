@@ -132,6 +132,7 @@ class SantanderService
 
     // Consulta de Saldo. Deve enviar em Token válido e o ClientId.
     // Endpoint: GET -> '/banks/banks/{bank_id}/balances/{balance_id}'
+    // 90400888081550
     public function getAccountSaldo(): mixed
     {
         try {
@@ -141,7 +142,7 @@ class SantanderService
             //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
-            $response = $this->client->get($this->base_uri . '/banks/90400888081550/balances/2194.000130010584', [
+            $response = $this->client->get($this->base_uri . '/banks/90400888000142/balances/2194.000130010584', [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
@@ -158,17 +159,17 @@ class SantanderService
     // Listagem de Extrato. Deve enviar em Token válido e o ClientId.
     // Endpoint: GET -> '/banks/{bank_id}/statements/{statement_id}'
     //               -> '/banks/{bank_id}/statements/{statement_id}?initialDate=2022-10-01&finalDate=2022-10-30&_offset=1&_limit=50'
-    public function getAccountExtrato(): mixed
+    public function getAccountExtrato(string $initial_date, string $finalDate, int $page): mixed
     {
         try {
             // Obtém um token válido.
             $token  = $this->getValidAccessToken();
-            $params = ''; //'?initialDate=2024-08-01&finalDate=2024-08-30&_offset=1&_limit=50';
+            $params = "?initialDate=$initial_date&finalDate=$finalDate&_offset=$page&_limit=50";
 
             //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
-            $response = $this->client->get($this->base_uri . '/banks/90400888081550/statements/2194.000130010584' . $params, [
+            $response = $this->client->get($this->base_uri . '/banks/90400888000142/statements/2194.000130010584' . $params, [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
@@ -193,7 +194,7 @@ class SantanderService
             //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
-            $response = $this->client->get($this->base_uri . '/banks/90400888081550/accounts', [
+            $response = $this->client->get($this->base_uri . '/banks/9040088/accounts', [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",

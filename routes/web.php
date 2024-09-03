@@ -49,6 +49,6 @@ Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
 Route::get('/santander/token', [SantanderController::class, 'getToken']);
 Route::get('/santander/contas', [SantanderController::class, 'getContas']);
 Route::get('/santander/saldo', [SantanderController::class, 'getSaldo']);
-Route::get('/santander/extrato', [SantanderController::class, 'getExtrato']);
+Route::get('/santander/extrato', [SantanderController::class, 'getExtrato'])->name('santander.extrato');
 
 require __DIR__ . '/auth.php';
