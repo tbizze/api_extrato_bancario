@@ -30,10 +30,19 @@ class SantanderController extends Controller
 
         return response()->json($balance);
     }
-    // Método para requisição do Listagem do Extrato à API Saldo e Extrato do Santander.
+
+    // Método para requisição do Extrato de Movimentações à API Saldo e Extrato do Santander.
     public function getExtrato(): JsonResponse
     {
         $balance = $this->santanderService->getAccountExtrato();
+
+        return response()->json($balance);
+    }
+
+    // Método para requisição da Listagem de Contas à API Saldo e Extrato do Santander.
+    public function getContas(): JsonResponse
+    {
+        $balance = $this->santanderService->getAccountsList();
 
         return response()->json($balance);
     }

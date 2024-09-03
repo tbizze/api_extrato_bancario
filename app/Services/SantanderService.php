@@ -156,7 +156,7 @@ class SantanderService
     }
 
     // Listagem de Extrato. Deve enviar em Token válido e o ClientId.
-    // Endpoint: GET -> '/banks/banks/{bank_id}/statements/{statement_id}'
+    // Endpoint: GET -> '/banks/{bank_id}/statements/{statement_id}'
     public function getAccountExtrato(): mixed
     {
         try {
@@ -167,6 +167,31 @@ class SantanderService
 
             // Faz a requisição com o Token e ClientId.
             $response = $this->client->get($this->base_uri . '/banks/90400888081550/statements/2194.000130010584', [
+                'headers' => [
+                    'X-Application-Key' => $this->client_id,
+                    'Authorization'     => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            // Retorna a mensagem de erro.
+            dd('Erro ao submeter requisição saldo:', $e);
+        }
+    }
+
+    // Listagem de Contas. Deve enviar em Token válido e o ClientId.
+    // Endpoint: GET -> '/banks/{bank_id}/accounts'
+    public function getAccountsList(): mixed
+    {
+        try {
+            // Obtém um token válido.
+            $token = $this->getValidAccessToken();
+
+            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
+
+            // Faz a requisição com o Token e ClientId.
+            $response = $this->client->get($this->base_uri . '/banks/90400888081550/accounts', [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
