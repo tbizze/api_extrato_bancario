@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    if (app()->isLocal()) {
+        // Para fins de teste, faça login como usuário com ID 1 no desenvolvimento local.
+        auth()->loginUsingId(1);
+
+        return to_route('dashboard');
+    }
+
     return view('welcome');
 });
 
@@ -27,5 +34,25 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+// Testes para requisições a API de livre acesso.
+// Não faz uso de chave (token) de segurança, nem certificado digital.
+Route::get('api/get', [HomeController::class, 'getApi']);
+Route::get('api/post', [HomeController::class, 'postApi']);
+
+// exemplos de como consumir a API de dados do Portal da Transparência do Governo Federal.
+// faz uso de chave (token) de segurança no HEADER.
+Route::get('api-de-dados/imoveis', [TransparenciaController::class, 'imoveis']);
+Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
+
+// PagBank
+Route::get('pagbank/extrato', [PagbankController::class, 'getExtrato'])->name('extrato');
+Route::get('pagbank/token', [PagbankController::class, 'token']);
+
+// teste de requisições a API do Banco do Santander.
+Route::get('/santander/token', [SantanderController::class, 'getToken']);
+Route::get('/santander/saldo', [SantanderController::class, 'getSaldo']);
+Route::get('/santander/contas', [SantanderController::class, 'getContas'])->name('santander.contas');
+Route::get('/santander/extrato', [SantanderController::class, 'getExtrato'])->name('santander.extrato');
 
 require __DIR__ . '/auth.php';
