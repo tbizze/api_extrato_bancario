@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\{HomeController, PagbankController, ProfileController, TransparenciaController};
+
+use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -48,5 +49,11 @@ Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
 // PagBank
 Route::get('pagbank/extrato', [PagbankController::class, 'getExtrato'])->name('extrato');
 Route::get('pagbank/token', [PagbankController::class, 'token']);
+
+// teste de requisições a API do Banco do Santander.
+Route::get('/santander/token', [SantanderController::class, 'getToken']);
+Route::get('/santander/saldo', [SantanderController::class, 'getSaldo']);
+Route::get('/santander/contas', [SantanderController::class, 'getContas'])->name('santander.contas');
+Route::get('/santander/extrato', [SantanderController::class, 'getExtrato'])->name('santander.extrato');
 
 require __DIR__ . '/auth.php';
