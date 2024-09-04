@@ -33,8 +33,7 @@ class PagbankService
         try {
             $response = $this->client->GET($this->baseUrl . '/users/' . $this->clientId . '/token/' . $this->token, [
                 'headers' => [
-                    'accept'        => 'application/json',
-                    'authorization' => 'Bearer ' . $this->token, // Anexa o token recebido no credenciamento.
+                    'accept' => 'application/json',
                 ],
             ]);
 
