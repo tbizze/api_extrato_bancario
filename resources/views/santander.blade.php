@@ -21,12 +21,12 @@
                             class="border border-gray-300 p-2 rounded">
                     </div>
                     <div class="">
-                        <label for="finalDate" class="mr-2">data fim:</label>
+                        <label for="finalDate" class="mr-2">Data fim:</label>
                         <input type="date" name="finalDate" id="finalDate" value="{{ $finalDate }}"
                             class="border border-gray-300 p-2 rounded">
                     </div>
                     <div class="">
-                        <label for="page" class="mr-2">Filter by Type:</label>
+                        <label for="page" class="mr-2">Página:</label>
                         <select name="page" id="page" class="border border-gray-300 p-2 rounded w-44">
                             <option value="">Selecione a página</option>
                             @foreach ($pages as $item)
@@ -37,41 +37,44 @@
                     </div>
                     <button type="submit" class="bg-blue-500 text-white px-8 py-2 rounded">Buscar</button>
                 </form>
+                <div
+                    class="relative flex flex-col w-full h-full overflow-auto text-gray-700 bg-white shadow-md bg-clip-border">
+                    <table class="min-w-full w-full table-auto bg-white">
+                        <thead>
+                            <tr class=" bg-slate-600 text-white">
+                                <th class="py-2 px-4 border-b ">Data</th>
+                                <th class="py-2 px-4 border-b text-right">Valor</th>
+                                <th class="py-2 px-4 border-b text-left">Tipo</th>
+                                <th class="py-2 px-4 border-b text-left">Histórico</th>
+                                <th class="py-2 px-4 border-b text-left">Complemento</th>
 
-                <table class="min-w-full bg-white">
-                    <thead>
-                        <tr class=" bg-slate-600 text-white">
-                            <th class="py-2 px-4 border-b ">Data</th>
-                            <th class="py-2 px-4 border-b text-right">Valor</th>
-                            <th class="py-2 px-4 border-b text-left">Tipo</th>
-                            <th class="py-2 px-4 border-b text-left">Histórico</th>
-                            <th class="py-2 px-4 border-b text-left">Complemento</th>
-
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($transactions['_content'] as $item)
-                            <tr class=" text-sm border-b">
-                                <td class="py-2 px-4 text-center text-sm">
-                                    {{ $item['transactionDate'] }}
-                                </td>
-                                <td class="py-2 px-4 text-sm text-right">
-                                    {{ $item['amount'] }}
-                                </td>
-                                <td class="py-2 px-4 text-sm">
-                                    {{ $item['creditDebitType'] }}
-                                </td>
-                                <td class="py-2 px-4 text-sm">
-                                    {{ $item['transactionName'] }}
-                                </td>
-                                <td class="py-2 px-4 text-sm">
-                                    {{ $item['historicComplement'] }}
-                                </td>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-
+                        </thead>
+                        <tbody>
+                            @foreach ($transactions['_content'] as $item)
+                                <tr class=" text-sm border-b">
+                                    <td class="py-2 px-4 text-center text-sm">
+                                        {{ $item['transactionDate'] }}
+                                    </td>
+                                    <td
+                                        class="py-2 px-4 text-sm text-right {{ $item['creditDebitType'] == 'DEBITO' ? 'text-red-600' : '' }}">
+                                        {{ number_format($item['amount'], 2, ',', '.') }}
+                                    </td>
+                                    <td
+                                        class="py-2 px-4 text-sm {{ $item['creditDebitType'] == 'DEBITO' ? 'text-red-600' : '' }}">
+                                        {{ $item['creditDebitType'] }}
+                                    </td>
+                                    <td class="py-2 px-4 text-sm">
+                                        {{ $item['transactionName'] }}
+                                    </td>
+                                    <td class="py-2 px-4 text-sm">
+                                        {{ $item['historicComplement'] }}
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>

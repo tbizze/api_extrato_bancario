@@ -19,28 +19,18 @@ class SantanderController extends Controller
     public function getToken(): JsonResponse
     {
         $token = $this->santanderService->generateAccessToken();
-        //$token = $this->santanderService->getAccessToken();
 
         return response()->json(['access_token' => $token]);
     }
 
     // Método para requisição do SALDO à API Saldo e Extrato do Santander.
-    public function getSaldo(): JsonResponse
+    public function getSaldo(): View
     {
-        $balance = $this->santanderService->getAccountSaldo();
+        // Chama a função de requisição do saldo.
+        $saldo = $this->santanderService->getAccountSaldo();
 
-        return response()->json($balance);
-        // availableAmount string
-        // Saldo disponível para uso imediato.
-        // Example: 100.00
-
-        // blockedAmount -> string
-        // Saldo bloqueado, não disponível para uso imediato.
-        // Example:100.00
-
-        // automaticallyInvestedAmount -> string
-        // Saldo disponível, incluindo Valor de Resgate Automático.
-        // Example:100.00
+        // return response()->json($balance);
+        return view('santander-saldo', compact(['saldo']));
     }
 
     // Método para requisição do Extrato de Movimentações à API Saldo e Extrato do Santander.
@@ -62,6 +52,22 @@ class SantanderController extends Controller
         return view('santander', compact(['transactions', 'initial_date', 'finalDate', 'page', 'pages']));
     }
 
+    // Método para requisição da Listagem de Contas à API Saldo e Extrato do Santander.
+    public function getContas(Request $request): View
+    {
+        // Define a página a ser consultada, caso não seja informada, assume-se a primeira página.
+        $request->filled('page') ? $page = $request->input('page') : $page = 1;
+
+        // Chama a função de requisição da lista de contas.
+        $contas = $this->santanderService->getAccountsList($page);
+
+        // Calcula o número de páginas para a listagem do extrato.
+        $pages = $this->getPages($contas);
+
+        return view('santander-contas', compact(['contas', 'page', 'pages']));
+    }
+
+    // Método para preparar as páginas do extrato em array.
     public function getPages(mixed $dados): mixed
     {
         $pages = [];
@@ -71,13 +77,5 @@ class SantanderController extends Controller
         }
 
         return $pages;
-    }
-
-    // Método para requisição da Listagem de Contas à API Saldo e Extrato do Santander.
-    public function getContas(): JsonResponse
-    {
-        $balance = $this->santanderService->getAccountsList();
-
-        return response()->json($balance);
     }
 }

@@ -47,8 +47,8 @@ Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
 
 // teste de requisições a API do Banco do Santander.
 Route::get('/santander/token', [SantanderController::class, 'getToken']);
-Route::get('/santander/contas', [SantanderController::class, 'getContas']);
 Route::get('/santander/saldo', [SantanderController::class, 'getSaldo']);
+Route::get('/santander/contas', [SantanderController::class, 'getContas'])->name('santander.contas');
 Route::get('/santander/extrato', [SantanderController::class, 'getExtrato'])->name('santander.extrato');
 
 require __DIR__ . '/auth.php';

@@ -64,7 +64,6 @@ class SantanderService
             return $data['access_token'];
         } catch (RequestException $e) {
             // Registre ou trate o erro, conforme necessário.
-            //return response()->json(['error' => 'Failed to obtain access token', 'message' => $e->getMessage()], 403);
             dd('Erro ao solicitar no endpoint token:', $e);
         }
     }
@@ -99,11 +98,9 @@ class SantanderService
 
         if ($expire >= $now) {
             // Data de expiração maior que atual
-            //dump('Agora: ' . $now . '// Expira: ' . $expire);
             return true;
         } else {
             // Data de expiração é menor que atual.
-            //dump('menor', $expire);
             return false;
         }
     }
@@ -130,16 +127,13 @@ class SantanderService
         ]);
     }
 
-    // Consulta de Saldo. Deve enviar em Token válido e o ClientId.
+    // Consulta de Saldo. Deve enviar no header um Token válido e o ClientId.
     // Endpoint: GET -> '/banks/banks/{bank_id}/balances/{balance_id}'
-    // 90400888081550
     public function getAccountSaldo(): mixed
     {
         try {
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
-
-            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
             $response = $this->client->get($this->base_uri . '/banks/90400888000142/balances/2194.000130010584', [
@@ -156,17 +150,15 @@ class SantanderService
         }
     }
 
-    // Listagem de Extrato. Deve enviar em Token válido e o ClientId.
-    // Endpoint: GET -> '/banks/{bank_id}/statements/{statement_id}'
-    //               -> '/banks/{bank_id}/statements/{statement_id}?initialDate=2022-10-01&finalDate=2022-10-30&_offset=1&_limit=50'
+    // Listagem de Extrato. Deve enviar no header um Token válido e o ClientId.
+    // Endpoint: GET -> '/banks/{bank_id}/statements/{statement_id}?initialDate=2022-10-01&finalDate=2022-10-30&_offset=1&_limit=50'
     public function getAccountExtrato(string $initial_date, string $finalDate, int $page): mixed
     {
         try {
             // Obtém um token válido.
-            $token  = $this->getValidAccessToken();
+            $token = $this->getValidAccessToken();
+            // Parâmetros da requisição.
             $params = "?initialDate=$initial_date&finalDate=$finalDate&_offset=$page&_limit=50";
-
-            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
 
             // Faz a requisição com o Token e ClientId.
             $response = $this->client->get($this->base_uri . '/banks/90400888000142/statements/2194.000130010584' . $params, [
@@ -183,18 +175,18 @@ class SantanderService
         }
     }
 
-    // Listagem de Contas. Deve enviar em Token válido e o ClientId.
+    // Listagem de Contas. Deve enviar no header um Token válido e o ClientId.
     // Endpoint: GET -> '/banks/{bank_id}/accounts?_offset={number}&_limit={number}'
-    public function getAccountsList(): mixed
+    public function getAccountsList(int $page): mixed
     {
         try {
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
-
-            //dump($this->client_id . ' | ' . $this->client_secret . ' => ' . $this->base_uri);
+            // Parâmetros da requisição.
+            $params = "_offset=$page&_limit=10";
 
             // Faz a requisição com o Token e ClientId.
-            $response = $this->client->get($this->base_uri . '/banks/9040088/accounts', [
+            $response = $this->client->get($this->base_uri . '/banks/90400888000142/accounts?' . $params, [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
                     'Authorization'     => "Bearer {$token}",
