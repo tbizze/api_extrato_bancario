@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{HomeController, ProfileController, TransparenciaController};
+use App\Http\Controllers\{HomeController, ProfileController, SantanderController, TransparenciaController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,5 +44,11 @@ Route::get('api/post', [HomeController::class, 'postApi']);
 // faz uso de chave (token) de segurança no HEADER.
 Route::get('api-de-dados/imoveis', [TransparenciaController::class, 'imoveis']);
 Route::get('api-de-dados/bpc', [TransparenciaController::class, 'bpc']);
+
+// teste de requisições a API do Banco do Santander.
+Route::get('/santander/token', [SantanderController::class, 'getToken']);
+Route::get('/santander/saldo', [SantanderController::class, 'getSaldo']);
+Route::get('/santander/contas', [SantanderController::class, 'getContas'])->name('santander.contas');
+Route::get('/santander/extrato', [SantanderController::class, 'getExtrato'])->name('santander.extrato');
 
 require __DIR__ . '/auth.php';
