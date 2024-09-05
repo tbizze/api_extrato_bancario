@@ -61,7 +61,7 @@ class UserController extends Controller
         // Carregar empresas para associar ao usuário
         $companies = ''; //Company::all();
 
-        return view('users.edit', compact('user', 'companies'));
+        return view('users.users-edit', compact('user', 'companies'));
     }
 
     /**
