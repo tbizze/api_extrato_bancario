@@ -29,7 +29,10 @@ class UserController extends Controller
         // Carregar empresas para associar ao usuário
         $companies = Company::all();
 
-        return view('users.users-create', compact('companies'));
+        // Carregar tipos de usuário
+        $tipos = $this->getTipos();
+
+        return view('users.users-create', compact('companies', 'tipos'));
     }
 
     /**
@@ -37,17 +40,21 @@ class UserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        // Validação de dados
+        $request->merge(['password' => '123']);
+
+        // Validação de dados.
         $validated = $request->validate([
-            'name'         => 'required|string|max:255',
+            'name'         => 'required|string|min:3|max:255',
             'email'        => 'required|email|unique:users',
-            'password'     => 'required|string|min:8|confirmed',
+            'is_superuser' => 'required|digits_between:0,1',
             'company_id'   => 'required|exists:companies,id',
-            'is_superuser' => 'boolean',
+            'password'     => 'required', // required|string|min:8|confirmed
         ]);
 
-        // Criar o usuário com senha criptografada
+        // Trata a senha para que senha armazenada com criptografia.
         $validated['password'] = Hash::make($validated['password']);
+
+        // Salvar o novo usuário.
         User::create($validated);
 
         return redirect()->route('users.index');
@@ -61,7 +68,10 @@ class UserController extends Controller
         // Carregar empresas para associar ao usuário
         $companies = Company::all();
 
-        return view('users.users-edit', compact('user', 'companies'));
+        // Carregar tipos de usuário
+        $tipos = $this->getTipos();
+
+        return view('users.users-edit', compact('user', 'companies', 'tipos'));
     }
 
     /**
@@ -69,22 +79,24 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): RedirectResponse
     {
+
         // Validação de dados
         $validated = $request->validate([
             'name'         => 'required|string|max:255',
             'email'        => 'required|email|unique:users,email,' . $user->id,
-            'password'     => 'nullable|string|min:8|confirmed',
+            'is_superuser' => 'required|digits_between:0,1',
             'company_id'   => 'required|exists:companies,id',
-            'is_superuser' => 'boolean',
+            'password'     => 'nullable', //required|string|min:8|confirmed
         ]);
 
-        // Atualizar o usuário, criptografando a senha apenas se fornecida
+        // Se senha foi digitado, trata-a para seja armazenada com criptografia.
         if ($request->filled('password')) {
             $validated['password'] = Hash::make($request->password);
         } else {
             unset($validated['password']);
         }
 
+        // Atualizar o usuário.
         $user->update($validated);
 
         return redirect()->route('users.index');
@@ -99,5 +111,15 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index');
+    }
+
+    public function getTipos(): mixed
+    {
+        $data = [
+            ['id' => 0, 'name' => 'Comum'],
+            ['id' => 1, 'name' => 'Super Admin'],
+        ];
+
+        return $data;
     }
 }
