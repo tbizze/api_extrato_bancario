@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController, UserController};
+use App\Http\Controllers\{CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +39,8 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'can:manage-users'])->group(function () {
     Route::resource('users', UserController::class);
 });
+
+Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
 
 // Testes para requisições a API de livre acesso.
 // Não faz uso de chave (token) de segurança, nem certificado digital.

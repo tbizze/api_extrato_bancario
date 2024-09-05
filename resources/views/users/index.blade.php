@@ -20,7 +20,7 @@
                             <tr class="bg-slate-600 ">
                                 <th class="py-2">Nome</th>
                                 <th>Email</th>
-                                {{-- <th>Empresa</th> --}}
+                                <th>Empresa</th>
                                 <th>Superusuário</th>
                                 <th>Ações</th>
                             </tr>
@@ -30,7 +30,7 @@
                                 <tr class="text-sm border-b ">
                                     <td class="px-2 py-2">{{ $user->name }}</td>
                                     <td>{{ $user->email }}</td>
-                                    {{-- <td>{{ $user->company->name }}</td> --}}
+                                    <td>{{ $user->company->name }}</td>
                                     <td>{{ $user->is_superuser ? 'Sim' : 'Não' }}</td>
                                     <td>
                                         <div class="flex gap-2">
