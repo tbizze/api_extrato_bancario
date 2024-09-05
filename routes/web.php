@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController};
+use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +33,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// A middleware can:manage-users garante que apenas superusuários possam acessar as rotas de gerenciamento de usuários.
+Route::middleware(['auth', 'can:manage-users'])->group(function () {
+    Route::resource('users', UserController::class);
 });
 
 // Testes para requisições a API de livre acesso.
