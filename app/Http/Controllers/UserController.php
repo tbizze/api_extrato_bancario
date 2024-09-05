@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{Company, User};
 use Illuminate\Http\{RedirectResponse, Request};
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\{Auth, Hash};
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -107,6 +107,11 @@ class UserController extends Controller
      */
     public function destroy(User $user): RedirectResponse
     {
+        // Verifica se não é tentativa de deletar o próprio usuário.
+        if (Auth::user()->id == $user->id) {
+            return redirect()->route('users.index')->with('error', 'Você não pode deletar seu próprio usuário.');
+        }
+
         // Deletar o usuário
         $user->delete();
 
