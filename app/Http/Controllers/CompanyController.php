@@ -32,7 +32,12 @@ class CompanyController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate(['name' => 'required|string']);
+        // Validação de dados
+        $validated = $request->validate([
+            'cnpj' => 'nullable|digits:14',
+            'name' => 'required|string|min:5|max:150',
+        ]);
+
         Company::create($validated);
 
         return redirect()->route('companies.index');
@@ -43,15 +48,23 @@ class CompanyController extends Controller
      */
     public function edit(Company $company): View
     {
-        return view('companies.edit');
+        return view('companies.edit', compact('company'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Company $company): void
+    public function update(Request $request, Company $company): RedirectResponse
     {
-        //
+        $validated = $request->validate([
+            'cnpj' => 'nullable|digits:14',
+            'name' => 'required|string|min:5|max:150',
+        ]);
+
+        // Atualizar a conta bancária
+        $company->update($validated);
+
+        return redirect()->route('companies.index');
     }
 
     /**
