@@ -12,6 +12,7 @@ return new class () extends Migration {
     {
         Schema::table('users', function (Blueprint $table) {
             $table->boolean('is_superuser')->default(false)->after('email');
+            $table->integer('company_id')->default(0)->after('email');
         });
     }
 
