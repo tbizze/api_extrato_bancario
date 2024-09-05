@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\{Company, User};
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,28 +14,29 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $company = Company::create(['name' => 'Empresa Exemplo', 'cnpj' => '03488844000111']);
-        //dd($company);
+        // Iniciar o gerador de dados fake.
+        $faker = Faker::create('pt_BR');
 
-        // User::factory()->create([
-        //     'name'  => 'Test User',
-        //     'email' => 'test@test.com',
-        // ]);
+        // Criar uma empresa
+        $company = Company::create([
+            'name' => $faker->company(),
+            'cnpj' => $faker->cnpj(false),
+        ]);
 
         // Criar superusuário
-        User::create([
+        User::factory()->create([
             'name'         => 'Super Admin',
-            'email'        => 'admin@test.com',
-            'password'     => Hash::make('password'),
+            'email'        => 'admin@test',
+            'password'     => Hash::make('123'),
             'company_id'   => $company->id,
             'is_superuser' => true,
         ]);
 
         // Criar um usuário comum
-        User::create([
+        User::factory()->create([
             'name'         => 'Usuário Comum',
-            'email'        => 'user@test.com',
-            'password'     => Hash::make('password'),
+            'email'        => 'user@test',
+            'password'     => Hash::make('123'),
             'company_id'   => $company->id,
             'is_superuser' => false,
         ]);
