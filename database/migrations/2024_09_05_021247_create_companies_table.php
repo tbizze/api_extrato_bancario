@@ -10,9 +10,11 @@ return new class () extends Migration {
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_superuser')->default(false)->after('email');
-            $table->integer('company_id')->default(0)->after('email');
+        Schema::create('companies', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('cnpj', 14);
+            $table->timestamps();
         });
     }
 
@@ -21,8 +23,6 @@ return new class () extends Migration {
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('is_superuser');
-        });
+        Schema::dropIfExists('companies');
     }
 };

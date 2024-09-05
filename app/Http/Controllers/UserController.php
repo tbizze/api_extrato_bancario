@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Models\{Company, User};
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -27,7 +27,7 @@ class UserController extends Controller
     public function create(): View
     {
         // Carregar empresas para associar ao usuário
-        $companies = ''; //Company::all();
+        $companies = Company::all();
 
         return view('users.users-create', compact('companies'));
     }
@@ -59,7 +59,7 @@ class UserController extends Controller
     public function edit(User $user): View
     {
         // Carregar empresas para associar ao usuário
-        $companies = ''; //Company::all();
+        $companies = Company::all();
 
         return view('users.users-edit', compact('user', 'companies'));
     }
