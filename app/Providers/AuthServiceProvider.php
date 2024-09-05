@@ -2,9 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\User;
-
-use App\Policies\UserPolicy;
+use App\Models\{Company, User};
+use App\Policies\{CompanyPolicy, UserPolicy};
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -17,7 +16,8 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         // 'App\Models\Model' => 'App\Policies\ModelPolicy',
-        User::class => UserPolicy::class,
+        User::class    => UserPolicy::class,
+        Company::class => CompanyPolicy::class,
     ];
 
     /**
@@ -28,6 +28,10 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Gate::define('manage-users', function (User $user) {
+            return $user->is_superuser;
+        });
+
+        Gate::define('manage-companies', function (User $user) {
             return $user->is_superuser;
         });
     }
