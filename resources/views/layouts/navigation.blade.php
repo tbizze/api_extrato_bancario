@@ -18,12 +18,16 @@
                     <x-nav-link :href="route('bank-accounts.index')" :active="request()->routeIs('bank-accounts.index')">
                         {{ __('Contas Bancárias') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('companies.index')" :active="request()->routeIs('companies.index')">
-                        {{ __('Empresas') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
-                        {{ __('Usuários') }}
-                    </x-nav-link>
+                    @can('manage-companies')
+                        <x-nav-link :href="route('companies.index')" :active="request()->routeIs('companies.index')">
+                            {{ __('Empresas') }}
+                        </x-nav-link>
+                    @endcan
+                    @can('manage-users')
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
+                            {{ __('Usuários') }}
+                        </x-nav-link>
+                    @endcan
                 </div>
             </div>
 
