@@ -10,9 +10,9 @@ class Company extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'cnpj'];
 
-    public function users(): mixed
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
