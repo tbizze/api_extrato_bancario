@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Models\{BankAccount, Company, User};
-use App\Policies\{BankAccountPolicy, CompanyPolicy, UserPolicy};
+use App\Models\{BankAccount, Company, Transaction, User};
+use App\Policies\{BankAccountPolicy, CompanyPolicy, TransactionPolicy, UserPolicy};
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -19,6 +19,7 @@ class AuthServiceProvider extends ServiceProvider
         User::class        => UserPolicy::class,
         Company::class     => CompanyPolicy::class,
         BankAccount::class => BankAccountPolicy::class,
+        Transaction::class => TransactionPolicy::class,
     ];
 
     /**
