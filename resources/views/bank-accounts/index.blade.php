@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Empresas') }}
+            {{ __('Contas Bancárias') }}
         </h2>
     </x-slot>
 
@@ -21,6 +21,7 @@
                                 <th class="py-2">Nome do Banco</th>
                                 <th>Número da Agência</th>
                                 <th>Número da Conta</th>
+                                <th>Transações</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -30,6 +31,10 @@
                                     <td class="px-2 py-2">{{ $item->bank_name }}</td>
                                     <td>{{ $item->account_agency }}</td>
                                     <td>{{ $item->account_number }}</td>
+                                    <td>
+                                        <a href="{{ route('bank-accounts.transactions.index', $item) }}"
+                                            class="border border-slate-700 px-2 rounded-md bg-slate-600">Listar</a>
+                                    </td>
                                     <td>
                                         <div class="flex gap-2">
                                             <a href="{{ route('bank-accounts.edit', $item) }}"
