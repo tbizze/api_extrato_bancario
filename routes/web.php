@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{BankAccountController, CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController, UserController};
+use App\Http\Controllers\{BankAccountController, CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,6 +43,10 @@ Route::middleware(['auth', 'can:manage-users'])->group(function () {
 // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas de gerenciamento de empresas.
 Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
 Route::resource('bank-accounts', BankAccountController::class);
+
+Route::middleware(['auth'])->group(function () {
+    Route::resource('bank-accounts.transactions', TransactionController::class)->shallow();
+});
 
 // Testes para requisições a API de livre acesso.
 // Não faz uso de chave (token) de segurança, nem certificado digital.
