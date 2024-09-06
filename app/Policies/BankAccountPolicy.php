@@ -11,9 +11,15 @@ class BankAccountPolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(User $user, BankAccount $bankAccount): bool
     {
         return false; // para não dar erro de método>
+    }
+
+    public function index(User $user, BankAccount $bankAccount): bool
+    {
+        // O usuário pode visualizar apenas as contas da sua empresa
+        return $user->company_id === $bankAccount->company_id;
     }
 
     /**
