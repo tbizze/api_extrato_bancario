@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{BankAccountController, CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransparenciaController, UserController};
+use App\Http\Controllers\{BankAccountController, CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,7 +46,11 @@ Route::resource('bank-accounts', BankAccountController::class);
 
 Route::middleware(['auth'])->group(function () {
     Route::resource('bank-accounts.transactions', TransactionController::class)->shallow();
+    Route::get('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
+        ->name('bank-accounts.transactions.import');
 });
+
+Route::post('/transactions/import', [TransactionImportController::class, 'import'])->name('transactions.import');
 
 // Testes para requisições a API de livre acesso.
 // Não faz uso de chave (token) de segurança, nem certificado digital.
