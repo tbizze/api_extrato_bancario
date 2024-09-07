@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\{BankAccount, Company};
+use App\Models\{Bank, BankAccount, Company};
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 
@@ -25,6 +25,23 @@ class BankAccountSeeder extends Seeder
         // Recuperar todas as empresas cadastradas.
         $companies = Company::all();
 
+        // Criar lista de bancos.
+        $banks = [
+            [
+                'bank_name'   => 'Banco Santander',
+                'bank_number' => '033',
+            ],
+            [
+                'bank_name'   => 'PagBank',
+                'bank_number' => '105',
+            ],
+        ];
+
+        // Armazena no BD os bancos listados.
+        foreach ($banks as $item) {
+            Bank::create($item);
+        }
+
         // Gerar contas bancárias para cada empresa.
         foreach ($companies as $item) {
             $x = BankAccount::create([
@@ -32,6 +49,7 @@ class BankAccountSeeder extends Seeder
                 'account_agency' => $faker->randomNumber(5),
                 'account_number' => $faker->randomNumber(9),
                 'company_id'     => $item->id,
+                'bank_id'        => $this->getRandom(Bank::class),
             ]);
         }
 
@@ -58,5 +76,12 @@ class BankAccountSeeder extends Seeder
         //     );
         // });
 
+    }
+
+    private function getRandom($model)
+    {
+        $random = $model::all()->random(1)->pluck('id');
+
+        return $random[0];
     }
 }
