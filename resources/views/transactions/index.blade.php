@@ -15,9 +15,15 @@
                                 {{ $bankAccount->bank_name }}
                             </span>
                         </h1>
-                        {{-- <a href="{{ route('bank-accounts.transactions.create', $bankAccount) }}"
-                            class="rounded border-slate-700 bg-slate-700 py-3 px-4">Adicionar
-                            Transação</a> --}}
+                        <a href="{{ route('bank-accounts.transactions.import', $bankAccount) }}"
+                            class="rounded border-slate-700 bg-slate-700 py-3 px-4">Importar Transações
+                        </a>
+                        {{-- <form action="{{ route('bank-accounts.transactions.import', $bankAccount) }}" method="POST"
+                            class="d-inline">
+                            @csrf
+                            <input type="hidden" name="bank_account_id" value="{{ $bankAccount->id }}" />
+                            <button class="rounded border-slate-700 bg-slate-700 py-3 px-4">Importar Transações</button>
+                        </form> --}}
                     </div>
 
                     <table class="min-w-full w-full table-auto text-left">
