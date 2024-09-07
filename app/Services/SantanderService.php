@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use DateTime;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Str;
 
 class SantanderService
 {
@@ -198,5 +199,52 @@ class SantanderService
             // Retorna a mensagem de erro.
             dd('Erro ao submeter requisição saldo:', $e);
         }
+    }
+
+    public function fetchTransactions($bankAccount)
+    {
+        try {
+            // Obtém um token válido.
+            $token = $this->getValidAccessToken();
+            // Parâmetros da requisição.
+            $page         = 1;
+            $initial_date = Carbon::now()->subDays(5)->format('Y-m-d');
+            $finalDate    = Carbon::now()->format('Y-m-d');
+            $statements   = $bankAccount->account_agency . '.' . Str::padLeft($bankAccount->account_number, 12, '0'); // 2194.000130010584
+
+            $params = "?initialDate=$initial_date&finalDate=$finalDate&_offset=$page&_limit=50";
+
+            // Faz a requisição com o Token e ClientId.
+            $response = $this->client->get($this->base_uri . "/banks/90400888000142/statements/$statements" . $params, [
+                'headers' => [
+                    'X-Application-Key' => $this->client_id,
+                    'Authorization'     => "Bearer {$token}",
+                ],
+            ]);
+
+            //return json_decode($response->getBody(), true);
+
+            $dados = json_decode($response->getBody(), true);
+
+            return $this->formatTransactions($dados, $bankAccount);
+        } catch (RequestException $e) {
+            // Retorna a mensagem de erro.
+            dd('Erro ao submeter requisição saldo:', $e);
+        }
+    }
+
+    protected function formatTransactions($transactions, $bankAccount)
+    {
+        return collect($transactions['_content'])->map(function ($transaction) use ($bankAccount) {
+            return [
+                'type'        => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
+                'description' => $transaction['transactionName'],
+                //'complement' => $transaction['historicComplement'],
+                'amount'          => $transaction['amount'],
+                'date'            => Carbon::createFromFormat('d/m/Y', $transaction['transactionDate'])->format('Y-m-d'),
+                'bank_account_id' => $bankAccount->id,
+                //'bank' => $bankAccount->bank->bank_name,
+            ];
+        })->toArray();
     }
 }
