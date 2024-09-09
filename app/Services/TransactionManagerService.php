@@ -16,32 +16,31 @@ class TransactionManagerService
         $this->pagBankService   = $pagBankService;
     }
 
-    public function importTransactions(BankAccount $bankAccount)
+    // Método que gerencia as requisições a serem feitas às APIs dos bancos.
+    // Conforme o BankAccount, chama o método 'fetchTransactions' da API correspondente.
+    // Recebe BankAccount | initial_date | final_date.
+    public function importTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
     {
-        //dd('importTransactions', $bankAccount->bank->id);
-
+        // Array para armazenar as transações retornadas da API.
         $transactions = [];
 
         switch ($bankAccount->bank->id) {
             case '1': // Santander
-                // Ao chamar o método 'fetchTransactions' passar os parâmetros necessários para a requisição à API.
-                // Passar também o objeto BankAccount, para que com ele o serviço do Santander possa obter
-                // os dados do cliente (clientId, clientSecret).
-
-                // $clientId = $bankAccount->bank->client_id;
-                // $clientSecret = $bankAccount->bank->client_secret;
-                $transactions = $this->santanderService->fetchTransactions($bankAccount);
+                // Informar o BankAccount. Com ele o serviço do Santander obtêm as credenciais (clientId, clientSecret).
+                // Informar o período a data a obter as transações: initial_date | final_date.
+                $transactions = $this->santanderService->fetchTransactions($bankAccount, $initial_date, $final_date);
 
                 break;
 
             case '2': //PagBank
-                //$transactions = $this->pagBankService->fetchTransactions($bankAccount);
+                // Informar o BankAccount. Com ele o serviço do PagBank obtêm as credenciais (clientId, token).
+                // Informar a data a obter as transações.
+                $transactions = $this->pagBankService->fetchTransactions($bankAccount, $initial_date);
+
                 break;
         }
 
+        // Devolve ao controller os dados obtidos da API do banco.
         return $transactions;
-
-        // Salvar as transações no banco de dados
-        //Transaction::insert($transactions);
     }
 }
