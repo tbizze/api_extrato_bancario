@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 
 class BankAccount extends Model
 {
@@ -12,7 +12,7 @@ class BankAccount extends Model
 
     protected $fillable = ['account_agency', 'account_number', 'bank_name', 'company_id'];
 
-    public function company(): mixed
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
@@ -20,5 +20,10 @@ class BankAccount extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function bank(): BelongsTo
+    {
+        return $this->belongsTo(Bank::class);
     }
 }
