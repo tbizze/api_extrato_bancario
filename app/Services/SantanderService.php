@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\SantanderToken;
+use App\Models\{BankAccount, SantanderToken};
 use Carbon\Carbon;
 use DateTime;
 use GuzzleHttp\Client;
@@ -201,20 +201,21 @@ class SantanderService
         }
     }
 
-    public function fetchTransactions($bankAccount)
+    // Método faz requisição do extrato a API Saldo e Extrato do Santander.
+    // Passar no header da requisição a credencial: na chave X-Application-Key o clientId; e na Authorization um token válido.
+    // PARÂMETRO: período (data inicial e data final).
+    public function fetchTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
     {
         try {
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
-            // Parâmetros da requisição.
-            $page         = 1;
-            $initial_date = Carbon::now()->subDays(5)->format('Y-m-d');
-            $finalDate    = Carbon::now()->format('Y-m-d');
-            $statements   = $bankAccount->account_agency . '.' . Str::padLeft($bankAccount->account_number, 12, '0'); // 2194.000130010584
 
-            $params = "?initialDate=$initial_date&finalDate=$finalDate&_offset=$page&_limit=50";
+            // Prepara os parâmetros da requisição.
+            $params = "?initialDate=$initial_date&finalDate=$final_date&_offset=1&_limit=50";
+            // Prepara o statements com 17 caracteres, concatenando agência e conta com o dígito -> 0000.000000000000
+            $statements = $bankAccount->account_agency . '.' . Str::padLeft($bankAccount->account_number, 12, '0');
 
-            // Faz a requisição com o Token e ClientId.
+            // Faz a requisição com o Token válido e ClientId.
             $response = $this->client->get($this->base_uri . "/banks/90400888000142/statements/$statements" . $params, [
                 'headers' => [
                     'X-Application-Key' => $this->client_id,
@@ -222,27 +223,33 @@ class SantanderService
                 ],
             ]);
 
-            //return json_decode($response->getBody(), true);
-
+            // Recupera na variável os dados da resposta da API, decodificando.
             $dados = json_decode($response->getBody(), true);
 
-            return $this->formatTransactions($dados, $bankAccount);
+            // Verifica se retornou transações na chave '_content'.
+            if (array_key_exists('_content', $dados)) {
+                // Para retornar, formata as transações obtidas, conforme padrão.
+                return $this->formatTransactions($dados, $bankAccount);
+            } else {
+                return [];
+            }
         } catch (RequestException $e) {
-            // Retorna a mensagem de erro.
-            dd('Erro ao submeter requisição saldo:', $e);
+            // Registre ou trate o erro, conforme necessário.
+            return response()->json(['error' => 'Falha na requisição.', 'message' => $e->getMessage()]);
         }
     }
 
-    protected function formatTransactions($transactions, $bankAccount)
+    // Método formata as transações obtidas para padrão comum a todos os bancos.
+    protected function formatTransactions(mixed $transactions, BankAccount $bankAccount): mixed
     {
         return collect($transactions['_content'])->map(function ($transaction) use ($bankAccount) {
             return [
-                'type'        => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
-                'description' => $transaction['transactionName'],
-                //'complement' => $transaction['historicComplement'],
+                'type'            => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
+                'description'     => $transaction['transactionName'],
                 'amount'          => $transaction['amount'],
                 'date'            => Carbon::createFromFormat('d/m/Y', $transaction['transactionDate'])->format('Y-m-d'),
                 'bank_account_id' => $bankAccount->id,
+                //'complement' => $transaction['historicComplement'],
                 //'bank' => $bankAccount->bank->bank_name,
             ];
         })->toArray();
