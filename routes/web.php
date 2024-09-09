@@ -35,22 +35,29 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// A middleware can:manage-users garante que apenas superusuários possam acessar as rotas de gerenciamento de usuários.
-Route::middleware(['auth', 'can:manage-users'])->group(function () {
-    Route::resource('users', UserController::class);
+// Rotas protegidas por autenticação e por gates personalizados.
+Route::middleware(['auth'])->group(function () {
+    // A middleware can:manage-users garante que apenas superusuários possam acessar as rotas.
+    Route::resource('users', UserController::class)->middleware('can:manage-users');
+
+    // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas.
+    Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
 });
 
-// A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas de gerenciamento de empresas.
-Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
-Route::resource('bank-accounts', BankAccountController::class);
-
+// Rotas protegidas por autenticação.
 Route::middleware(['auth'])->group(function () {
+    // Contas bancárias --> resource completo.
+    Route::resource('bank-accounts', BankAccountController::class);
+
+    // Transações -> resource parcial.
     Route::resource('bank-accounts.transactions', TransactionController::class)->shallow();
-    Route::get('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
+    // View para parâmetros da importação de transações.
+    Route::get('bank-accounts/{bank_account}/transactions/select', [TransactionImportController::class, 'select'])
+        ->name('bank-accounts.transactions.select');
+    // Importação de transações.
+    Route::post('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
         ->name('bank-accounts.transactions.import');
 });
-
-Route::post('/transactions/import', [TransactionImportController::class, 'import'])->name('transactions.import');
 
 // Testes para requisições a API de livre acesso.
 // Não faz uso de chave (token) de segurança, nem certificado digital.
