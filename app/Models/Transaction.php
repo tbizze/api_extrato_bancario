@@ -25,6 +25,9 @@ class Transaction extends Model
     ];
 
     // Accessor para formatar a data.
+    /**
+     * @return Attribute<string, string>
+     */
     protected function date(): Attribute
     {
         return Attribute::make(
@@ -32,6 +35,9 @@ class Transaction extends Model
         );
     }
     // Accessor para formatar o tipo da transação.
+    /**
+     * @return Attribute<string, string>
+     */
     protected function type(): Attribute
     {
         return Attribute::make(
@@ -39,6 +45,9 @@ class Transaction extends Model
         );
     }
 
+    /**
+     * @return BelongsTo<BankAccount, Transaction>
+     */
     public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(BankAccount::class);

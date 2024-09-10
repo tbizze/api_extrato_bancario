@@ -12,11 +12,17 @@ class Company extends Model
 
     protected $fillable = ['name', 'cnpj'];
 
+    /**
+     * @return HasMany<User>
+     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }
 
+    /**
+     * @return HasMany<BankAccount>
+     */
     public function bankAccounts(): HasMany
     {
         return $this->hasMany(BankAccount::class);

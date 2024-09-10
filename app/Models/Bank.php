@@ -12,6 +12,9 @@ class Bank extends Model
 
     protected $fillable = ['bank_name', 'bank_number', 'client_id', 'client_secret'];
 
+    /**
+     * @return HasMany<BankAccount>
+     */
     public function bankAccounts(): HasMany
     {
         return $this->hasMany(BankAccount::class);
