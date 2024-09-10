@@ -2,56 +2,74 @@
 
 namespace App\Services;
 
-use App\Models\{BankAccount, SantanderToken};
+use App\Models\{AccessToken, BankAccount};
 use Carbon\Carbon;
 use DateTime;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 class SantanderService
 {
-    protected mixed $client;
+    protected Client $client;
 
     protected string $base_uri;
 
     protected string $base_uri_oauth;
 
-    protected string $client_secret;
+    protected BankAccount $bankAccount;
+
+    protected string $cert;
+
+    protected string $key;
 
     protected string $client_id;
+
+    protected string $client_secret;
 
     // Método construtor do client.
     // Ao instanciar, deve enviar certificado e também chave privada.
 
     public function __construct()
     {
-        if (env('SANTANDER_AMBIENTE') === 'sandbox') {
+        if (env('ENVIRONMENT_API') === 'sandbox') {
             $this->base_uri_oauth = env('SANTANDER_BASE_URI_SANDBOX'); // Base URI para autenticação de client.
             $this->base_uri       = env('SANTANDER_BASE_URI_SANDBOX') . '/bank_account_information/v1'; // Base URI para requisições de client.
-            $this->client_id      = env('SANTANDER_CLIENT_ID_SANDBOX'); // Client ID para autenticação de client.
-            $this->client_secret  = env('SANTANDER_CLIENT_SECRET_SANDBOX'); // ClientSecret para autenticação de cliente.
         } else {
             $this->base_uri_oauth = env('SANTANDER_BASE_URI'); // Base URI para autenticação de client.
             $this->base_uri       = env('SANTANDER_BASE_URI') . '/bank_account_information/v1'; // Base URI para requisições de client.
-            $this->client_id      = env('SANTANDER_CLIENT_ID'); // Client ID para autenticação de client.
-            $this->client_secret  = env('SANTANDER_CLIENT_SECRET'); // ClientSecret para autenticação de cliente.
         }
 
+        $this->cert = base_path(env('API_CERT_PATH')); //Client ID para autenticação de client.
+        $this->key  = base_path(env('API_KEY_PATH')); // ClientSecret para autenticação de cliente.
+
         $this->client = new Client([
-            'cert'    => base_path(env('API_CERT_PATH')), // Anexa o certificado.
-            'ssl_key' => base_path(env('API_KEY_PATH')), // Anexa a chave privada.
+            'cert'    => $this->cert, // Anexa o certificado.
+            'ssl_key' => $this->key, // Anexa a chave privada.
         ]);
+    }
+
+    // Método define propriedades da classe, a partir BankAccount recebido como argumento.
+    private function setBankAccount(BankAccount $bankAccount): void
+    {
+        $this->bankAccount   = $bankAccount;
+        $this->cert          = $bankAccount->certificate_path;
+        $this->key           = $bankAccount->key_path;
+        $this->client_id     = Crypt::decryptString($bankAccount->client_id);
+        $this->client_secret = Crypt::decryptString($bankAccount->client_secret);
     }
 
     // Método envia as credenciais para o endpoint de autenticação do OAuth.
     // Retorna o token de acesso.
-    public function generateAccessToken(): string
+    private function generateAccessToken(): string
     {
         try {
             $response = $this->client->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
                 'form_params' => [
-                    'grant_type'    => 'client_credentials',
+                    'grant_type' => 'client_credentials',
+                    // 'client_id'     => $this->client_id,
+                    // 'client_secret' => $this->client_secret,
                     'client_id'     => $this->client_id,
                     'client_secret' => $this->client_secret,
                 ],
@@ -71,19 +89,20 @@ class SantanderService
 
     // Método para buscar e validar último token.
     // Se inválido, requisita novo.
-    public function getValidAccessToken(): string
+    private function getValidAccessToken(): string
     {
         // Busca último token emitido.
-        $data = SantanderToken::query()
-            ->where('type_token', '=', env('SANTANDER_AMBIENTE'))
+        $data = AccessToken::query()
+            ->where('bank_account_id', '=', $this->bankAccount->id)
+            ->where('environment', '=', env('ENVIRONMENT_API'))
             ->orderBy('id', 'DESC')->first();
 
+        // Se inválido, requisita novo
         if ($data) {
             // Invoca método para testar o token.
-            if ($data->access_token && $this->isTokenValid($data->expires_at)) {
-
+            if ($data->token && $this->isTokenValid($data->expires_at)) {
                 // Retorna o último token registrado, e que ainda não expirou.
-                return $data->access_token;
+                return $data->token;
             }
         }
 
@@ -93,10 +112,12 @@ class SantanderService
 
     // Método confere validade do Access Token.
     // Recebe como parâmetro quando expira o token já registrado.
-    public function isTokenValid(DateTime $expire): bool
+    private function isTokenValid(string $expire): bool
     {
+        // Obtêm a data atual.
         $now = Carbon::now();
 
+        // Verifica se a data de expiração é maior ou igual à data de hoje.
         if ($expire >= $now) {
             // Data de expiração maior que atual
             return true;
@@ -107,7 +128,7 @@ class SantanderService
     }
 
     // Método calcula quando irá expirar o token.
-    public function expireToken(): DateTime
+    private function expireToken(): DateTime
     {
         $now    = Carbon::now();
         $expire = $now->addSeconds(900);
@@ -118,13 +139,16 @@ class SantanderService
     // Método para armazenar o token de acesso criado no BD.
     private function storeAccessToken(mixed $token): void
     {
-        SantanderToken::create([
-            'type_token'        => env('SANTANDER_AMBIENTE'), // Especifica qual foi o ambiente que gerou o token.
-            'access_token'      => $token['access_token'],
+        // Salva o token na base de dados.
+        AccessToken::create([
+            'bank_account_id'   => $this->bankAccount->id,
+            'environment'       => env('ENVIRONMENT_API'), // Ambiente que gerou o token.
+            'token'             => $token['access_token'],
             'expires_in'        => $token['expires_in'],
             'expires_at'        => $this->expireToken(),
             'not_before_policy' => $token['not-before-policy'],
             'session_state'     => $token['session_state'],
+            'status'            => true,
         ]);
     }
 
@@ -207,6 +231,9 @@ class SantanderService
     public function fetchTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
     {
         try {
+            // Método para setar propriedades da classe.
+            $this->setBankAccount($bankAccount);
+
             // Obtém um token válido.
             $token = $this->getValidAccessToken();
 
@@ -218,13 +245,14 @@ class SantanderService
             // Faz a requisição com o Token válido e ClientId.
             $response = $this->client->get($this->base_uri . "/banks/90400888000142/statements/$statements" . $params, [
                 'headers' => [
-                    'X-Application-Key' => $this->client_id,
+                    'X-Application-Key' => Crypt::decryptString($this->bankAccount->client_id),
                     'Authorization'     => "Bearer {$token}",
                 ],
             ]);
 
             // Recupera na variável os dados da resposta da API, decodificando.
             $dados = json_decode($response->getBody(), true);
+            //dd($dados);
 
             // Verifica se retornou transações na chave '_content'.
             if (array_key_exists('_content', $dados)) {
@@ -247,11 +275,23 @@ class SantanderService
                 'type'            => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
                 'description'     => $transaction['transactionName'],
                 'amount'          => $transaction['amount'],
-                'date'            => Carbon::createFromFormat('d/m/Y', $transaction['transactionDate'])->format('Y-m-d'),
+                'date'            => $this->formatDate($transaction['transactionDate']),
                 'bank_account_id' => $bankAccount->id,
                 //'complement' => $transaction['historicComplement'],
                 //'bank' => $bankAccount->bank->bank_name,
             ];
         })->toArray();
+    }
+
+    // Método para formatar a data de uma string para o padrão 'Y-m-d'.
+    protected function formatDate(string $date): string
+    {
+        // Converte a data para o padrão 'Y-m-d', caso seja no formato 'd/m/Y'.
+        if (Carbon::hasFormat($date, 'd/m/Y')) {
+            return Carbon::createFromFormat('d/m/Y', $date)->format('Y-m-d');
+        }
+
+        // Retorna sem formatar.
+        return $date;
     }
 }

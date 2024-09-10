@@ -7,4 +7,14 @@ parameters:
         - app/
 
     # Level 9 is the highest level
-    level: 5
+    level: 6
+
+    ignoreErrors:
+        - message: '#Unable to resolve the template type TKey in call to function collect#'
+          paths: 
+              - %currentWorkingDirectory%/app/Services/SantanderService.php
+              - %currentWorkingDirectory%/app/Services/PagbankService.php
+        - message: '#Unable to resolve the template type TValue in call to function collect#'
+          paths: 
+              - %currentWorkingDirectory%/app/Services/SantanderService.php
+              - %currentWorkingDirectory%/app/Services/PagbankService.php

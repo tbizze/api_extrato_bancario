@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BankAccount;
+use App\Models\{Bank, BankAccount};
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -26,7 +26,10 @@ class BankAccountController extends Controller
      */
     public function create(): View
     {
-        return view('bank-accounts.create');
+        // Carregar banks para associar à conta bancária
+        $banks = Bank::all();
+
+        return view('bank-accounts.create', compact('banks'));
     }
 
     /**
@@ -36,6 +39,7 @@ class BankAccountController extends Controller
     {
         // Validação de dados
         $validated = $request->validate([
+            'bank_id'        => 'required|integer',
             'account_agency' => 'required|digits_between:3,10',
             'account_number' => 'required|digits_between:3,20',
             'bank_name'      => 'required|string|min:5|max:150',
@@ -63,7 +67,10 @@ class BankAccountController extends Controller
         //     abort(403, 'Você não tem permissão para acessar esta conta bancária.');
         // }
 
-        return view('bank-accounts.edit', compact('bankAccount'));
+        // Carregar banks para associar à conta bancária
+        $banks = Bank::all();
+
+        return view('bank-accounts.edit', compact('bankAccount', 'banks'));
     }
 
     /**
@@ -72,7 +79,7 @@ class BankAccountController extends Controller
     public function update(Request $request, BankAccount $bankAccount): RedirectResponse
     {
 
-        // OPÇÃO 2: Policy --> Garantir que o usuário só pode editar contas da sua empresa
+        // OPÇÃO 1: Policy --> Garantir que o usuário só pode editar contas da sua empresa
         $this->authorize('update', $bankAccount);
 
         // OPÇÃO 2: Lógica --> Garantir que a conta pertence à empresa do usuário
@@ -81,6 +88,7 @@ class BankAccountController extends Controller
         // }
 
         $validated = $request->validate([
+            'bank_id'        => 'required|integer',
             'account_agency' => 'required|digits_between:3,10',
             'account_number' => 'required|digits_between:3,20',
             'bank_name'      => 'required|string|min:5|max:150',

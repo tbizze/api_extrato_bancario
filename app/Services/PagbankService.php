@@ -8,7 +8,7 @@ use GuzzleHttp\Exception\RequestException;
 
 class PagbankService
 {
-    protected mixed $client;
+    protected Client $client;
 
     protected string $baseUrl;
 

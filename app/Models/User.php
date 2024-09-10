@@ -49,11 +49,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Company, User>
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * @return HasManyThrough<BankAccount>
+     */
     public function bankAccounts(): HasManyThrough
     {
         return $this->hasManyThrough(BankAccount::class, Company::class);

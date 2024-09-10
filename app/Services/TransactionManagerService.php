@@ -19,7 +19,7 @@ class TransactionManagerService
     // Método que gerencia as requisições a serem feitas às APIs dos bancos.
     // Conforme o BankAccount, chama o método 'fetchTransactions' da API correspondente.
     // Recebe BankAccount | initial_date | final_date.
-    public function importTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
+    public function importTransactions(BankAccount $bankAccount, string $initial_date, string|null $final_date): mixed
     {
         // Array para armazenar as transações retornadas da API.
         $transactions = [];
