@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{BankAccountController, CompanyController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
+use App\Http\Controllers\{BankAccountController, CompanyController, CredentialBankAccountController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,6 +42,16 @@ Route::middleware(['auth'])->group(function () {
 
     // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas.
     Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
+
+    // Gerenciamento de credenciais das APIs dos bancos.
+    // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas.
+    Route::prefix('bank-accounts/{bank_account}/credentials')->group(function () {
+        Route::get('/edit', [CredentialBankAccountController::class, 'edit'])
+            ->middleware('can:manage-companies')->name('bank-accounts.credentials.edit');
+        Route::put('/', [CredentialBankAccountController::class, 'update'])
+            ->middleware('can:manage-companies')->name('bank-accounts.credentials.update');
+        // ... outras rotas relacionadas a artigos
+    });
 });
 
 // Rotas protegidas por autenticação.
