@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\BankAccount;
+use App\Services\Banks\{PagBankService, SantanderService};
 
 class TransactionManagerService
 {
@@ -10,7 +11,7 @@ class TransactionManagerService
 
     protected mixed $pagBankService;
 
-    public function __construct(SantanderService $santanderService, PagbankService $pagBankService)
+    public function __construct(SantanderService $santanderService, PagBankService $pagBankService)
     {
         $this->santanderService = $santanderService;
         $this->pagBankService   = $pagBankService;
