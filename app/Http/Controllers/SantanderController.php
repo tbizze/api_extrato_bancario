@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SantanderService;
+use App\Services\Banks\SantanderService as BanksSantanderService;
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\View\View;
 
@@ -10,7 +10,7 @@ class SantanderController extends Controller
 {
     protected mixed $santanderService;
 
-    public function __construct(SantanderService $santanderService)
+    public function __construct(BanksSantanderService $santanderService)
     {
         $this->santanderService = $santanderService;
     }
