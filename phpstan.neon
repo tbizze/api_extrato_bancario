@@ -12,9 +12,9 @@ parameters:
     ignoreErrors:
         - message: '#Unable to resolve the template type TKey in call to function collect#'
           paths: 
-              - %currentWorkingDirectory%/app/Services/SantanderService.php
-              - %currentWorkingDirectory%/app/Services/PagbankService.php
+              - %currentWorkingDirectory%/app/Services/Banks/SantanderService.php
+              - %currentWorkingDirectory%/app/Services/Banks/PagBankService.php
         - message: '#Unable to resolve the template type TValue in call to function collect#'
           paths: 
-              - %currentWorkingDirectory%/app/Services/SantanderService.php
-              - %currentWorkingDirectory%/app/Services/PagbankService.php
+              - %currentWorkingDirectory%/app/Services/Banks/SantanderService.php
+              - %currentWorkingDirectory%/app/Services/Banks/PagBankService.php
