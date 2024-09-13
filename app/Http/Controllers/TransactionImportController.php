@@ -48,14 +48,25 @@ class TransactionImportController extends Controller
             ->importTransactions($bankAccount, $validated['initial_date'], $validated['final_date']);
 
         // Verifica o retorno do TransactionManagerService.
-        if (isset($transactions) && is_array($transactions) && count($transactions) > 0) {
-            // Se retornado transações, salva do banco de dados.
-            Transaction::insert($transactions);
-            $number_transactions_import = count($transactions);
-        } else {
+        if (isset($transactions) && is_array($transactions) && array_key_exists('error', $transactions)) {
+
+            // Se ocorreu erro, emite uma mensagem avisando.
+            return redirect()->route('bank-accounts.transactions.select', $bankAccount)
+                ->with('error', $transactions['error'] . ' ' . $transactions['message']);
+        } elseif (isset($transactions) && is_array($transactions) && array_key_exists('info', $transactions)) {
+
             // Se não retornou transações, emite uma mensagem avisando.
-            return redirect()->route('bank-accounts.transactions.select', $bankAccount)->with('message', "Não foi encontrado transações para importar!");
+            return redirect()->route('bank-accounts.transactions.select', $bankAccount)
+                ->with('message', $transactions['info'] . ' ' . $transactions['message']);
         }
+
+        // Se retornado transações, salva do banco de dados.
+        // Transaction::create($transactions);
+        foreach ($transactions as $transaction) {
+            // Salva do banco de dados.
+            Transaction::create($transaction);
+        }
+        $number_transactions_import = count($transactions);
 
         // Redireciona para lista de transações. Exibe mensagem de sucesso.
         return redirect()->route('bank-accounts.transactions.index', $bankAccount)
