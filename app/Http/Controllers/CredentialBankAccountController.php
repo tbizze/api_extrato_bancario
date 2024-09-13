@@ -16,12 +16,12 @@ class CredentialBankAccountController extends Controller
     public function edit(BankAccount $bankAccount): View
     {
         // Se Cliente ID e Client Secret no BD, então descriptografa.
-        if (isset($bankAccount->client_id)) {
+        if ($bankAccount->client_id != null) {
             $clientId               = Crypt::decryptString($bankAccount->client_id);
             $bankAccount->client_id = $clientId;
         }
 
-        if (isset($bankAccount->client_secret)) {
+        if ($bankAccount->client_secret != null) {
             $clientSecret               = Crypt::decryptString($bankAccount->client_secret);
             $bankAccount->client_secret = $clientSecret;
         }
