@@ -11,8 +11,8 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('bank_accounts', function (Blueprint $table) {
-            $table->string('client_id')->nullable()->after('bank_id');
-            $table->string('client_secret')->nullable()->after('client_id');
+            $table->string('client_id', 900)->nullable()->after('bank_id');
+            $table->string('client_secret', 900)->nullable()->after('client_id');
             $table->string('certificate_path')->nullable()->after('client_secret');
             $table->string('key_path')->nullable()->after('certificate_path');
         });
