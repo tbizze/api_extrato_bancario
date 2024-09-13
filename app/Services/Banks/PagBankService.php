@@ -4,7 +4,7 @@ namespace App\Services\Banks;
 
 use App\Models\BankAccount;
 use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\{Crypt, Http};
+use Illuminate\Support\Facades\{Crypt, Http, Log};
 
 class PagBankService
 {
@@ -54,28 +54,91 @@ class PagBankService
                     'pageSize'      => '20',
                 ]);
 
-            // Recupera na variável os dados da resposta da API, decodificando.
-            $data = $response->json();
+            // Se requisição bem sucedida, segue lógica para formatar retorno das transações.
+            if ($response->successful()) {
+                // Coloca o response obtido da API em variável json.
+                $transactions = $response->json();
 
-            // Para retornar, formata as transações obtidas, conforme padrão.
-            return $this->formatTransactions($data, $bankAccount);
+                // Checa se obteve transações na chave 'detalhes'.
+                if (array_key_exists('detalhes', $transactions) && count($transactions['detalhes'])) {
+                    //dd($transactions);
+
+                    // Formata transações obtidas, conforme padrão. Depois retorna.
+                    return $this->formatTransactions($transactions);
+                } else {
+
+                    // Retorna mensagem informando que não obteve transações.
+                    return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+                }
+            }
+
+            // Caso requisição não tenha sido bem sucedida.
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->errorMessage($response);
         } catch (RequestException $e) {
-            // Registre ou trate o erro, conforme necessário.
-            return response()->json(['error' => 'Falha na requisição.', 'message' => $e->getMessage()]);
+
+            // Registra o erro no LOG.
+            Log::error('PagBankService: Falha na requisição | ' . $this->bankAccount->bank->bank_name .
+                '_' . $this->bankAccount->id . ' | Message => ' . $e->getMessage());
+
+            // Retorna a mensagem de erro.
+            return ['error' => 'Falha na requisição.', 'message' => $e->getMessage()];
+        }
+    }
+
+    // Método para tratamento de erros para status HTTP diferentes de 200.
+    protected function errorMessage(mixed $response): mixed
+    {
+        switch ($response->status()) {
+            case 400:
+                //400 Query string obrigatória ausente.
+                $messageError = $response->json();
+                Log::error('PagBankService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 400 Parâmetro obrigatório ausente - ' . $messageError['message']);
+
+                return ['error' => '400 Parâmetro obrigatório ausente.', 'message' => $messageError['message']];
+
+            case 401:
+                // 401 Acesso negado. Verifique o ClientId e o Token utilizado.
+                Log::error('PagBankService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 401 Acesso negado - Verifique o ClientId e o Token utilizado.');
+
+                return ['error' => '401 Acesso negado.', 'message' => 'Verifique o ClientId e o Token utilizado.'];
+
+            case 404:
+                // 404 Não encontrada. Verifique URL usada.
+                Log::error('PagBankService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 404 Não encontrada - Verifique URL usada.');
+
+                return ['error' => '404 Não encontrada.', 'message' => 'Verifique URL usada.'];
+
+            case 422:
+                // 422 Erro na Consulta.
+                Log::error('PagBankService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 422 Erro na Consulta - A consulta não pode ser realizada.');
+
+                return ['error' => '422 Erro na Consulta.', 'message' => 'A consulta não pode ser realizada.'];
+
+            default:
+                // Erro e retorna aviso padrão.
+                Log::error('PagBankService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Code: ' . $response->status());
+
+                return ['error' => $response->status() . ' Falha na requisição.', 'message' => 'Falha na requisição.'];
         }
     }
 
     // Método formata as transações obtidas para padrão comum a todos os bancos.
     // Para preparar a chave 'description', chama o método makeDescriptions.
-    protected function formatTransactions(mixed $transactions, BankAccount $bankAccount): mixed
+    protected function formatTransactions(mixed $transactions): mixed
     {
-        return collect($transactions['detalhes'])->map(function ($transaction) use ($bankAccount) {
+        return collect($transactions['detalhes'])->map(function ($transaction) {
             return [
                 'type'            => 'credit',
                 'description'     => $this->makeDescriptions($transaction),
                 'amount'          => $transaction['valor_total_transacao'],
                 'date'            => $transaction['data_movimentacao'],
-                'bank_account_id' => $bankAccount->id,
+                'bank_account_id' => $this->bankAccount->id,
             ];
         })->toArray();
     }
