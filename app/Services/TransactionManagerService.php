@@ -61,8 +61,8 @@ class TransactionManagerService
         // Array para armazenar as transações retornadas da API.
         $transactions = [];
 
-        // Obtêm a data atual.
-        $now = Carbon::now()->subDays(2)->format('Y-m-d');
+        // Obtêm a data atual. Subtrai um dia.
+        $now = Carbon::now()->subDays(1)->format('Y-m-d');
 
         switch ($bankAccount->bank->id) {
             case '1': // Santander
