@@ -6,8 +6,7 @@ use App\Models\{AccessToken, BankAccount};
 use Carbon\Carbon;
 use DateTime;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\{Crypt, Http};
+use Illuminate\Support\Facades\{Crypt, Http, Log};
 use Illuminate\Support\Str;
 
 class SantanderService
@@ -50,30 +49,61 @@ class SantanderService
 
     // Método envia as credenciais para o endpoint de autenticação do OAuth.
     // Retorna o token de acesso.
-    private function generateToken(): string
+    private function generateToken(): mixed
     {
-        // Fazer a requisição para obter o token de acesso
-        $response = Http::asForm()->withOptions([
-            'cert'    => $this->certificate,
-            'ssl_key' => $this->key,
-        ])->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
-            'grant_type'    => 'client_credentials',
-            'client_id'     => $this->client_id,
-            'client_secret' => $this->client_secret,
-        ]);
+        try {
+            // Fazer a requisição para obter o token de acesso.
+            $response = Http::asForm()->withOptions([
+                'cert'    => $this->certificate,
+                'ssl_key' => $this->key,
+            ])->post($this->base_uri_oauth . '/auth/oauth/v2/token', [
+                'grant_type'    => 'client_credentials',
+                'client_id'     => $this->client_id,
+                'client_secret' => $this->client_secret,
+            ]);
 
-        $data = $response->json();
+            // Coloca o response da API em variável json.
+            $data = $response->json();
 
-        // Chama método para armazenar dados do token.
-        $this->storeAccessToken($data);
+            // Quando requisição for bem sucedida, segue lógica para retornar o token.
+            if ($response->successful()) {
 
-        // Retorna o token criado.
-        return $data['access_token'];
+                // Armazenar os dados do token no BD
+                $this->storeAccessToken($data);
+
+                // Retorna o token criado.
+                return $data['access_token'];
+            }
+
+            // Se requisição não teve sucesso. Trata o erro e retorna informando.
+            // Inicializa a variável $error.
+            $error = ['error' => 'Erro desconhecido.', 'message' => 'Falha ao obter token.'];
+
+            if ($response->unauthorized()) {
+                $error = ['error' => '401 Acesso negado.', 'message' => $data['error_description']];
+            }
+
+            if ($response->notFound()) {
+                $error = ['error' => '404 Não encontrado.', 'message' => $data['fault']['faultstring']];
+            }
+
+            // Registro erro no LOG.
+            Log::error('SantanderService: Erro ao gerar token | ' . $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | ' . $error['error'] . ' - ' . $error['message']);
+
+            // Retorna mensagem de erro.
+            return $error;
+        } catch (\Exception $e) {
+            // Registra o erro no LOG.
+            Log::error('SantanderService: Erro ao gerar token | ' . $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => ' . $e->getMessage());
+
+            // Retorna a mensagem de erro.
+            return ['error' => 'Erro ao gerar token.', 'message' => $e->getMessage()];
+        }
     }
 
     // Método para buscar e validar último token.
     // Se inválido, requisita novo.
-    private function getValidToken(): string
+    private function getValidToken(): mixed
     {
         // Busca no BD o último token emitido.
         $data = AccessToken::query()
@@ -153,6 +183,11 @@ class SantanderService
             // Obtém um token válido.
             $token = $this->getValidToken();
 
+            // Se teve erro ao buscar o token, retorna mensagem.
+            if (is_array($token) && array_key_exists('error', $token)) {
+                return $token;
+            }
+
             // Prepara o statements com 17 caracteres, concatenando agência e conta com o dígito -> 0000.000000000000
             $statements = $bankAccount->account_agency . '.' . Str::padLeft($bankAccount->account_number, 12, '0');
 
@@ -171,32 +206,87 @@ class SantanderService
                     '_limit'      => '50',
                 ]);
 
-            // Recupera na variável os dados da resposta da API, decodificando.
-            $data = $response->json();
+            // Se requisição bem sucedida, segue lógica para formatar retorno das transações.
+            if ($response->successful()) {
+                // Coloca o response obtido da API em variável json.
+                $transactions = $response->json();
 
-            // Verifica se retornou transações na chave '_content'.
-            if (array_key_exists('_content', $data)) {
-                // Para retornar, formata as transações obtidas, conforme padrão.
-                return $this->formatTransactions($data, $bankAccount);
-            } else {
-                return [];
+                // Checa se obteve transações na chave '_content'.
+                if (array_key_exists('_content', $transactions) && count($transactions['_content'])) {
+
+                    // Antes de retornar, formata as transações obtidas
+                    return $this->formatTransactions($transactions);
+                } else {
+
+                    // Retorna mensagem informando que não obteve transações.
+                    return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+                }
             }
-        } catch (RequestException $e) {
-            // Registre ou trate o erro, conforme necessário.
-            return response()->json(['error' => 'Falha na requisição.', 'message' => $e->getMessage()]);
+
+            // Caso requisição não tenha sido bem sucedida.
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->errorMessage($response);
+        } catch (\Exception $e) {
+            // Registra o erro no LOG.
+            Log::error('SantanderService: Falha na requisição | ' . $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => ' . $e->getMessage());
+
+            // Retorna a mensagem de erro.
+            return ['error' => 'Falha na requisição.', 'message' => $e->getMessage()];
+        }
+    }
+
+    // Método para tratamento de erros para status HTTP diferentes de 200.
+    protected function errorMessage(mixed $response): mixed
+    {
+        switch ($response->status()) {
+            case 400:
+                //400 Query string obrigatória ausente.
+                $messageError = $response->json();
+                Log::error('SantanderService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 400 Parâmetro obrigatório ausente - ' . $messageError['message']);
+
+                return ['error' => '400 Parâmetro obrigatório ausente.', 'message' => $messageError['message']];
+
+            case 401:
+                // 401 Acesso negado. Verifique o ClientId e o Token utilizado.
+                Log::error('SantanderService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 401 Acesso negado - Verifique o ClientId e o Token utilizado.');
+
+                return ['error' => '401 Acesso negado.', 'message' => 'Verifique o ClientId e o Token utilizado.'];
+
+            case 404:
+                // 404 Não encontrada. Verifique URL usada.
+                Log::error('SantanderService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 404 Não encontrada - Verifique URL usada.');
+
+                return ['error' => '404 Não encontrada.', 'message' => 'Verifique URL usada.'];
+
+            case 422:
+                // 422 Erro na Consulta.
+                Log::error('SantanderService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => 422 Erro na Consulta - A consulta não pode ser realizada.');
+
+                return ['error' => '422 Erro na Consulta.', 'message' => 'A consulta não pode ser realizada.'];
+
+            default:
+                // Erro e retorna aviso padrão.
+                Log::error('SantanderService: Falha na requisição | ' .
+                    $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Code: ' . $response->status());
+
+                return ['error' => $response->status() . ' Falha na requisição.', 'message' => 'Falha na requisição.'];
         }
     }
 
     // Método formata as transações obtidas para padrão comum a todos os bancos.
-    protected function formatTransactions(mixed $transactions, BankAccount $bankAccount): mixed
+    protected function formatTransactions(mixed $transactions): mixed
     {
-        return collect($transactions['_content'])->map(function ($transaction) use ($bankAccount) {
+        return collect($transactions['_content'])->map(function ($transaction) {
             return [
                 'type'            => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
                 'description'     => $transaction['transactionName'],
                 'amount'          => $transaction['amount'],
                 'date'            => $this->formatDate($transaction['transactionDate']),
-                'bank_account_id' => $bankAccount->id,
+                'bank_account_id' => $this->bankAccount->id,
             ];
         })->toArray();
     }
