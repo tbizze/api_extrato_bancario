@@ -73,7 +73,7 @@ class TransactionManagerService
 
                 // Informar o BankAccount. Com ele o serviço do Santander obtêm as credenciais (clientId, clientSecret).
                 // Informar o período a data a obter as transações: initial_date | final_date.
-                $transactions = $this->santanderService->fetchTransactions($bankAccount, $now, $now);
+                $transactions = $this->santanderService->fetchAllTransactions($bankAccount, $now, $now);
 
                 break;
 
@@ -85,7 +85,7 @@ class TransactionManagerService
 
                 // Informar o BankAccount. Com ele o serviço do PagBank obtêm as credenciais (clientId, token).
                 // Informar a data a obter as transações.
-                $transactions = $this->pagBankService->fetchTransactions($bankAccount, $now);
+                $transactions = $this->pagBankService->fetchAllTransactions($bankAccount, $now);
 
                 break;
         }
