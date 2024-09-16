@@ -171,6 +171,98 @@ class SantanderService
         ]);
     }
 
+    public function fetchAllTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
+    {
+        $allTransactions = [];
+        $pageNumber      = 1;
+        $totalPages      = 1;
+
+        // Método para setar propriedades da classe.
+        $this->setProperties($bankAccount);
+
+        // Obtém um token válido.
+        $token = $this->getValidToken();
+
+        // Se teve erro ao buscar o token, retorna mensagem.
+        if (is_array($token) && array_key_exists('error', $token)) {
+            return $token;
+        }
+
+        // Prepara o statements com 17 caracteres, concatenando agência e conta com o dígito -> 0000.000000000000.
+        $statements = $bankAccount->account_agency . '.' . Str::padLeft($bankAccount->account_number, 12, '0');
+
+        // Faz a requisição para obter as transações.
+        $response = Http::withToken($token)->withHeaders([
+            'X-Application-Key' => $this->client_id,
+        ])
+            ->withOptions([
+                'cert'    => $this->certificate,
+                'ssl_key' => $this->key,
+            ])
+            ->get($this->base_uri . "/banks/90400888000142/statements/$statements", [
+                'initialDate' => $initial_date,
+                'finalDate'   => $final_date,
+                '_offset'     => $pageNumber,
+                '_limit'      => '4',
+            ]);
+
+        // Caso requisição não tenha sucesso.
+        if ($response->failed()) {
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->checkResponse($response);
+        }
+
+        // Coloca o response da API em variável json.
+        $transactions = $response->json();
+
+        // Checa se obteve transações na chave '_content'.
+        // Adiciona transações retornadas à lista de transações.
+        if (array_key_exists('_content', $transactions) && count($transactions['_content'])) {
+            $allTransactions = array_merge($allTransactions, $transactions['_content']);
+        }
+
+        // Checa informações de páginas na chave '_pageable'.
+        // Pega o total de páginas.
+        if (array_key_exists('_pageable', $transactions) && count($transactions['_pageable'])) {
+            $totalPages = $transactions['_pageable']['totalPages'];
+        }
+
+        // Caso o número de páginas seja maior que um.
+        if ($totalPages > 1) {
+            // Executa um Loop até que atinja o número total de páginas.
+            for ($page = 2; $page <= $totalPages; $page++) {
+
+                // Faz a requisição para obter as transações da próxima página.
+                $response = Http::withToken($token)->withHeaders([
+                    'X-Application-Key' => $this->client_id,
+                ])
+                    ->withOptions([
+                        'cert'    => $this->certificate,
+                        'ssl_key' => $this->key,
+                    ])
+                    ->get($this->base_uri . "/banks/90400888000142/statements/$statements", [
+                        'initialDate' => $initial_date,
+                        'finalDate'   => $final_date,
+                        '_offset'     => $page,
+                        '_limit'      => '4',
+                    ]);
+
+                // Checa se obteve transações na chave '_content'.
+                // Adiciona transações retornadas à lista de transações.
+                $allTransactions = array_merge($allTransactions, $this->checkResponse($response));
+            }
+        }
+
+        if (!empty($allTransactions)) {
+
+            return $this->formatTransactions($allTransactions);
+        } else {
+
+            // Retorna mensagem informando que não obteve transações.
+            return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+        }
+    }
+
     // Método faz requisição do extrato a API Saldo e Extrato do Santander.
     // Submeter o token. Passar no header o clientId através da chave X-Application-Key.
     // PARÂMETRO: período (data inicial e data final).
@@ -225,7 +317,7 @@ class SantanderService
 
             // Caso requisição não tenha sido bem sucedida.
             // Antes de retornar, trata o erro retornado no response.
-            return $this->errorMessage($response);
+            return $this->checkResponse($response);
         } catch (\Exception $e) {
             // Registra o erro no LOG.
             Log::error('SantanderService: Falha na requisição | ' . $this->bankAccount->bank->bank_name . '_' . $this->bankAccount->id . ' | Message => ' . $e->getMessage());
@@ -236,9 +328,24 @@ class SantanderService
     }
 
     // Método para tratamento de erros para status HTTP diferentes de 200.
-    protected function errorMessage(mixed $response): mixed
+    protected function checkResponse(mixed $response): mixed
     {
+        // Coloca o response obtido da API em variável json.
+        $transactions = $response->json();
+
         switch ($response->status()) {
+            case 200:
+                // 200 OK. Requisição bem sucedida.
+                // Checa se obteve transações na chave '_content'.
+                if (array_key_exists('_content', $transactions) && count($transactions['_content'])) {
+
+                    return $transactions['_content'];
+                } else {
+
+                    // Retorna mensagem informando que não obteve transações.
+                    return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+                }
+                // no break
             case 400:
                 //400 Query string obrigatória ausente.
                 $messageError = $response->json();
@@ -280,7 +387,7 @@ class SantanderService
     // Método formata as transações obtidas para padrão comum a todos os bancos.
     protected function formatTransactions(mixed $transactions): mixed
     {
-        return collect($transactions['_content'])->map(function ($transaction) {
+        return collect($transactions)->map(function ($transaction) {
             return [
                 'type'            => $transaction['creditDebitType'] == 'DEBITO' ? 'debit' : 'credit',
                 'description'     => $transaction['transactionName'],
