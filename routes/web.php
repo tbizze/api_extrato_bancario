@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{HomeController, PagbankController, ProfileController, SantanderController, TransparenciaController};
+use App\Http\Controllers\{BankAccountController, CompanyController, CredentialBankAccountController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,6 +33,40 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Rotas protegidas por autenticação e por gates personalizados.
+Route::middleware(['auth'])->group(function () {
+    // A middleware can:manage-users garante que apenas superusuários possam acessar as rotas.
+    Route::resource('users', UserController::class)->middleware('can:manage-users');
+
+    // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas.
+    Route::resource('companies', CompanyController::class)->middleware('can:manage-companies');
+
+    // Gerenciamento de credenciais das APIs dos bancos.
+    // A middleware can:manage-companies garante que apenas superusuários possam acessar as rotas.
+    Route::prefix('bank-accounts/{bank_account}/credentials')->group(function () {
+        Route::get('/edit', [CredentialBankAccountController::class, 'edit'])
+            ->middleware('can:manage-companies')->name('bank-accounts.credentials.edit');
+        Route::put('/', [CredentialBankAccountController::class, 'update'])
+            ->middleware('can:manage-companies')->name('bank-accounts.credentials.update');
+        // ... outras rotas relacionadas a artigos
+    });
+});
+
+// Rotas protegidas por autenticação.
+Route::middleware(['auth'])->group(function () {
+    // Contas bancárias --> resource completo.
+    Route::resource('bank-accounts', BankAccountController::class);
+
+    // Transações -> resource parcial.
+    Route::resource('bank-accounts.transactions', TransactionController::class)->shallow();
+    // View para parâmetros da importação de transações.
+    Route::get('bank-accounts/{bank_account}/transactions/select', [TransactionImportController::class, 'select'])
+        ->name('bank-accounts.transactions.select');
+    // Importação de transações.
+    Route::post('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
+        ->name('bank-accounts.transactions.import');
 });
 
 // Testes para requisições a API de livre acesso.

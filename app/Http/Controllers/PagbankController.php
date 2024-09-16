@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\PagbankService;
+use App\Services\Banks\PagBankService as BanksPagBankService;
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\View\View;
 
@@ -12,7 +12,7 @@ class PagbankController extends Controller
 
     // Método construtor: faz injeção de dependências,
     // disponibilizando uso no controller, dos métodos da Classe de Serviço.
-    public function __construct(PagbankService $PagbankService)
+    public function __construct(BanksPagBankService $PagbankService)
     {
         $this->pagbankService = $PagbankService;
     }
