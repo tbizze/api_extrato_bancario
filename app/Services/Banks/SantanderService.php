@@ -253,9 +253,6 @@ class SantanderService
             }
         }
 
-        //dd($this->formatTransactions($allTransactions));
-        // Checa se foi inserido transações no array.
-        // Formata transações obtidas, conforme padrão. Depois retorna.
         if (!empty($allTransactions)) {
 
             return $this->formatTransactions($allTransactions);
