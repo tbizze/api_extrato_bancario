@@ -41,8 +41,8 @@ class SantanderService
     private function setProperties(BankAccount $bankAccount): void
     {
         $this->bankAccount   = $bankAccount;
-        $this->certificate   = storage_path('app/private/certificates/' . $bankAccount->certificate_path);
-        $this->key           = storage_path('app/private/keys/' . $bankAccount->key_path);
+        $this->certificate   = storage_path(env('API_CERT_PATH') . $bankAccount->certificate_path);
+        $this->key           = storage_path(env('API_KEY_PATH') . $bankAccount->key_path);
         $this->client_id     = Crypt::decryptString($bankAccount->client_id);
         $this->client_secret = Crypt::decryptString($bankAccount->client_secret);
     }
