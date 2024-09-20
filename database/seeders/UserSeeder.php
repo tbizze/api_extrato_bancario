@@ -33,12 +33,12 @@ class UserSeeder extends Seeder
         ]);
 
         // Criar um usuário comum
-        User::factory()->create([
-            'name'         => 'Usuário Comum',
-            'email'        => 'user@test',
-            'password'     => Hash::make('123'),
-            'company_id'   => $company->id,
-            'is_superuser' => false,
-        ]);
+        // User::factory()->create([
+        //     'name'         => 'Usuário Comum',
+        //     'email'        => 'user@test',
+        //     'password'     => Hash::make('123'),
+        //     'company_id'   => $company->id,
+        //     'is_superuser' => false,
+        // ]);
     }
 }
