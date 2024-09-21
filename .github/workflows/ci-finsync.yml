@@ -1,0 +1,43 @@
+name: FinSync CI
+
+on:
+  push:
+    branches:
+      - fix/0.2-actons-deploy-main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # - name: 🚚 Checkout do repositório
+      #   uses: actions/checkout@v3
+
+      # - name: Setup PHP
+      #   uses: shivammathur/setup-php@v2
+      #   with:
+      #     php-version: "8.1"
+
+      # - name: Instalar Package.json
+      #   run: npm install
+      # - name: Build Assets
+      #   run: npm run build
+
+      - name: Executa comandos remotos via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.REMOTE_PORT }}
+          script: |
+            cp -f composer.phar domains/ccidadania.com/public_html/finsync
+            cd domains/ccidadania.com/public_html/finsync
+
+            php -r "file_exists('.env') || copy('.env.example', '.env');"
+            # Alterar variável existente
+            sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
+            sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
+            # Adicionar novas variáveis ao final do arquivo
+            echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:\nAPI_CERT_PATH="app/private/certificates/"' >> .env
+            echo -e '\n# API_KEY_PATH="app/private/keys/\"' >> .env
