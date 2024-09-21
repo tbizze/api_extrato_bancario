@@ -3,7 +3,7 @@ name: FinSync CI
 on:
   push:
     branches:
-      - fix/0.2-actons-deploy-main
+      - feature/API-48-criando-ci
 
 jobs:
   build:
