@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
 
         // Criar uma empresa
         $company = Company::create([
-            'name' => $faker->company(),
+            'name' => 'FinSync Company',
             'cnpj' => $faker->cnpj(false),
         ]);
 
