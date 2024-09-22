@@ -40,6 +40,7 @@ jobs:
             sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
             sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
             sed -i 's/^LOG_CHANNEL=stack/LOG_CHANNEL=daily/' .env
+            sed -i 's/^APP_URL=http://localhost/APP_URL="https://finsync.ccidadania.com"/' .env
 
             # Alterar variável de BD
             sed -i 's/^DB_DATABASE=Laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
@@ -48,17 +49,11 @@ jobs:
 
             # Adicionar novas variáveis ao final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
-            echo -e '\n# API_CERT_PATH="app/private/certificates/"' >> .env
-            echo -e '\n# API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
-            echo -e '\n# SANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
-            echo -e '\n# SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
-            echo -e '\n# PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
+            echo -e '\n API_CERT_PATH="app/private/certificates/"' >> .env
+            echo -e '\n API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
+            echo -e '\n SANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
+            echo -e '\n SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
+            echo -e '\n PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
 
             # Criar e configurar o arquivo .htaccess
-            echo -e '<IfModule mod_rewrite.c>\n
-            RewriteEngine On\n
-            RewriteBase /\n
-            RewriteRule ^-$public/index.php [L]\n
-            RewriteRule ^((?!public/).*)$ public/$1 [L]\n
-            </IfModule>' 
-            > .htaccess
+            echo -e '<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^-$public/index.php [L]\nRewriteRule ^((?!public/).*)$ public/$1 [L]\n</IfModule>' > .htaccess
