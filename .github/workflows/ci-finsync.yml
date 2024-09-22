@@ -28,7 +28,7 @@ jobs:
         with:
           host: ${{ vars.REMOTE_HOST }}
           username: ${{ vars.REMOTE_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          key: ${{ vars.SERVER_SSH_KEY }}
           port: ${{ vars.REMOTE_PORT }}
           script: |
             cp -f ${{ vars.TARGET }}
@@ -47,8 +47,18 @@ jobs:
             sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ vars.DB_PASSWORD }}/' .env
 
             # Adicionar novas variáveis ao final do arquivo
-            echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:\nAPI_CERT_PATH="app/private/certificates/"' >> .env
-            echo -e '\n# API_KEY_PATH="app/private/keys/\"' >> .env
+            echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
+            echo -e '\n# API_CERT_PATH="app/private/certificates/"' >> .env
+            echo -e '\n# API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
+            echo -e '\n# SANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
+            echo -e '\n# SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
+            echo -e '\n# PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
 
             # Criar e configurar o arquivo .htaccess
-            echo -e 'RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]' > .htaccess
+            echo -e '<IfModule mod_rewrite.c>\n
+            RewriteEngine On\n
+            RewriteBase /\n
+            RewriteRule ^-$public/index.php [L]\n
+            RewriteRule ^((?!public/).*)$ public/$1 [L]\n
+            </IfModule>' 
+            > .htaccess
