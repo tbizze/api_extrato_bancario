@@ -28,11 +28,11 @@ jobs:
         with:
           host: ${{ vars.REMOTE_HOST }}
           username: ${{ vars.REMOTE_USER }}
-          key: ${{ vars.SERVER_SSH_KEY }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ vars.REMOTE_PORT }}
           script: |
-            cp -f ${{ vars.TARGET }}
-            cd domains/ccidadania.com/public_html/finsync
+            cp -f composer.phar ${{ vars.TARGET }}
+            cd ${{ vars.TARGET }}
 
             php -r "file_exists('.env') || copy('.env.example', '.env');"
 
@@ -43,8 +43,8 @@ jobs:
 
             # Alterar variável de BD
             sed -i 's/^DB_DATABASE=Laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
-            sed -i 's/^DB_USERNAME=root/DB_USERNAME=${{ vars.DB_USERNAME }}/' .env
-            sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ vars.DB_PASSWORD }}/' .env
+            sed -i 's/^DB_USERNAME=root/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
+            sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
 
             # Adicionar novas variáveis ao final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
