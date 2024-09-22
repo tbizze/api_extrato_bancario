@@ -26,18 +26,29 @@ jobs:
       - name: Executa comandos remotos via ssh
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
+          host: ${{ vars.REMOTE_HOST }}
+          username: ${{ vars.REMOTE_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.REMOTE_PORT }}
+          port: ${{ vars.REMOTE_PORT }}
           script: |
-            cp -f composer.phar domains/ccidadania.com/public_html/finsync
+            cp -f ${{ vars.TARGET }}
             cd domains/ccidadania.com/public_html/finsync
 
             php -r "file_exists('.env') || copy('.env.example', '.env');"
-            # Alterar variável existente
+
+            # Alterar variáveis gerais
             sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
             sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
+            sed -i 's/^LOG_CHANNEL=stack/LOG_CHANNEL=daily/' .env
+
+            # Alterar variável de BD
+            sed -i 's/^DB_DATABASE=Laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
+            sed -i 's/^DB_USERNAME=root/DB_USERNAME=${{ vars.DB_USERNAME }}/' .env
+            sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ vars.DB_PASSWORD }}/' .env
+
             # Adicionar novas variáveis ao final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:\nAPI_CERT_PATH="app/private/certificates/"' >> .env
             echo -e '\n# API_KEY_PATH="app/private/keys/\"' >> .env
+
+            # Criar e configurar o arquivo .htaccess
+            echo -e 'RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]' > .htaccess
