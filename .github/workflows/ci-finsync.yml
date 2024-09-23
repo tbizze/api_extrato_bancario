@@ -69,6 +69,7 @@ jobs:
             # Adicionar novas variáveis no final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
             echo -e 'API_CERT_PATH="app/private/certificates/"' >> .env
+            echo -e 'API_KEY_PATH="app/private/keys/"' >> .env
             echo -e 'ENVIRONMENT_API="production"' >> .env
             echo -e '\nSANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
             echo -e 'SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
