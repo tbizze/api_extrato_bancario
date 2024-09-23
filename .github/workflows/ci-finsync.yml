@@ -35,6 +35,7 @@ jobs:
             cd ${{ vars.TARGET }}
 
             php -r "file_exists('.env') || copy('.env.example', '.env');"
+            php artisan key:generate
 
             # Alterar variáveis gerais
             sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
@@ -49,11 +50,11 @@ jobs:
 
             # Adicionar novas variáveis ao final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
-            echo -e '\n API_CERT_PATH="app/private/certificates/"' >> .env
-            echo -e '\n API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
-            echo -e '\n SANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
-            echo -e '\n SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
-            echo -e '\n PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
+            echo -e 'API_CERT_PATH="app/private/certificates/"' >> .env
+            echo -e 'API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
+            echo -e '\nSANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
+            echo -e 'SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
+            echo -e 'PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
 
             # Criar e configurar o arquivo .htaccess
             echo -e '<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^-$public/index.php [L]\nRewriteRule ^((?!public/).*)$ public/$1 [L]\n</IfModule>' > .htaccess
