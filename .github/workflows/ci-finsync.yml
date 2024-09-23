@@ -33,14 +33,19 @@ jobs:
           script: |
             cp -f composer.phar ${{ vars.TARGET }}
             cd ${{ vars.TARGET }}
+            php composer.phar install --no-dev --optimize-autoloader
 
+            # Criar.env e setar APP_KEY
             php -r "file_exists('.env') || copy('.env.example', '.env');"
             php artisan key:generate
 
-            # Alterar variáveis gerais
+            # Alterar ambiente, debug e log
             sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
-            sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
+            sed -i 's/^APP_DEBUG=true/APP_DEBUG=false/' .env
             sed -i 's/^LOG_CHANNEL=stack/LOG_CHANNEL=daily/' .env
+
+            # Alterar nome aplicação e url
+            sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
             sed -i 's|^APP_URL=http://localhost|APP_URL="https://finsync.ccidadania.com"|' .env
 
             # Alterar variável de BD
@@ -51,7 +56,7 @@ jobs:
             # Adicionar novas variáveis ao final do arquivo
             echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
             echo -e 'API_CERT_PATH="app/private/certificates/"' >> .env
-            echo -e 'API_CERT_PATH="ENVIRONMENT_API="production"' >> .env
+            echo -e 'ENVIRONMENT_API="production"' >> .env
             echo -e '\nSANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
             echo -e 'SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
             echo -e 'PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
