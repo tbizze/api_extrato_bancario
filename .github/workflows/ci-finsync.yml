@@ -44,7 +44,7 @@ jobs:
             sed -i 's|^APP_URL=http://localhost|APP_URL="https://finsync.ccidadania.com"|' .env
 
             # Alterar variável de BD
-            sed -i 's/^DB_DATABASE=Laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
+            sed -i 's/^DB_DATABASE=laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
             sed -i 's/^DB_USERNAME=root/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
             sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
 
