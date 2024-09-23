@@ -76,6 +76,7 @@ jobs:
 
             # Instalar tabelas no BD
             php artisan migrate --force
+            php artisan db:seed --force
 
             # Criar e configurar o arquivo .htaccess
             echo -e '<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^-$public/index.php [L]\nRewriteRule ^((?!public/).*)$ public/$1 [L]\n</IfModule>' > .htaccess

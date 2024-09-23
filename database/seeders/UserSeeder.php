@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Criar superusuário
-        User::factory()->create([
+        User::create([
             'name'              => 'Super Admin',
             'email'             => 'admin@test',
             'password'          => Hash::make('123'),
