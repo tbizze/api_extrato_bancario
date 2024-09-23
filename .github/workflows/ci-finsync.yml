@@ -40,7 +40,7 @@ jobs:
             sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
             sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
             sed -i 's/^LOG_CHANNEL=stack/LOG_CHANNEL=daily/' .env
-            sed -i 's/^APP_URL=http://localhost/APP_URL="https://finsync.ccidadania.com"/' .env
+            sed -i 's|^APP_URL=http://localhost|APP_URL="https://finsync.ccidadania.com"|' .env
 
             # Alterar variável de BD
             sed -i 's/^DB_DATABASE=Laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
