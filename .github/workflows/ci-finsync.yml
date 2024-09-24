@@ -33,6 +33,7 @@ jobs:
           REMOTE_USER: ${{ vars.REMOTE_USER }}
           REMOTE_PORT: ${{ vars.REMOTE_PORT }}
           TARGET: ${{ vars.TARGET }}
+          EXCLUDE: ".env, .htaccess, storage/app/private"
 
       - name: Executa comandos remotos via ssh
         uses: appleboy/ssh-action@v1.0.3
@@ -48,36 +49,5 @@ jobs:
             # Baixar dependências de composer
             php composer.phar install --no-dev --prefer-dist --optimize-autoloader
 
-            # Criar .env e setar APP_KEY
-            php -r "file_exists('.env') || copy('.env.example', '.env');"
-            php artisan key:generate
-
-            # Alterar variáveis de ambiente, debug e log
-            sed -i 's/^APP_ENV=local/APP_ENV=production/' .env
-            sed -i 's/^APP_DEBUG=true/APP_DEBUG=false/' .env
-            sed -i 's/^LOG_CHANNEL=stack/LOG_CHANNEL=daily/' .env
-
-            # Alterar  variáveis de nome da aplicação e url
-            sed -i 's/^APP_NAME=Laravel/APP_NAME=FinSync/' .env
-            sed -i 's|^APP_URL=http://localhost|APP_URL="https://finsync.ccidadania.com"|' .env
-
-            # Alterar variável de configs de BD
-            sed -i 's/^DB_DATABASE=laravel/DB_DATABASE=${{ vars.DB_DATABASE }}/' .env
-            sed -i 's/^DB_USERNAME=root/DB_USERNAME=${{ secrets.DB_USERNAME }}/' .env
-            sed -i 's/^DB_PASSWORD=/DB_PASSWORD=${{ secrets.DB_PASSWORD }}/' .env
-
-            # Adicionar novas variáveis no final do arquivo
-            echo -e '\n# CAMINHO DE ACESSO AO CERTIFICADO E KEY:' >> .env
-            echo -e 'API_CERT_PATH="app/private/certificates/"' >> .env
-            echo -e 'API_KEY_PATH="app/private/keys/"' >> .env
-            echo -e 'ENVIRONMENT_API="production"' >> .env
-            echo -e '\nSANTANDER_BASE_URI_SANDBOX="https://trust-sandbox.api.santander.com.br"' >> .env
-            echo -e 'SANTANDER_BASE_URI="https://trust-open.api.santander.com.br"' >> .env
-            echo -e 'PAGBANK_BASE_URI="https://edi.api.pagseguro.com.br/edi/v1"' >> .env
-
             # Instalar tabelas no BD
             php artisan migrate --force
-            php artisan db:seed --force
-
-            # Criar e configurar o arquivo .htaccess
-            echo -e '<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteBase /\nRewriteRule ^-$public/index.php [L]\nRewriteRule ^((?!public/).*)$ public/$1 [L]\n</IfModule>' > .htaccess
