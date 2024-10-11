@@ -41,8 +41,8 @@ class SantanderService
     private function setProperties(BankAccount $bankAccount): void
     {
         $this->bankAccount   = $bankAccount;
-        $this->certificate   = storage_path('app/private/certificates/' . $bankAccount->certificate_path);
-        $this->key           = storage_path('app/private/keys/' . $bankAccount->key_path);
+        $this->certificate   = storage_path(env('API_CERT_PATH') . $bankAccount->certificate_path);
+        $this->key           = storage_path(env('API_KEY_PATH') . $bankAccount->key_path);
         $this->client_id     = Crypt::decryptString($bankAccount->client_id);
         $this->client_secret = Crypt::decryptString($bankAccount->client_secret);
     }
@@ -171,6 +171,11 @@ class SantanderService
         ]);
     }
 
+    /*
+    Parâmetros:
+      _limit: total máximo de itens por página => mín:1 máx:50
+      _offset: de qual página a consulta deve trazer os resultados => padrão:1
+     */
     public function fetchAllTransactions(BankAccount $bankAccount, string $initial_date, string $final_date): mixed
     {
         $allTransactions = [];
@@ -203,7 +208,7 @@ class SantanderService
                 'initialDate' => $initial_date,
                 'finalDate'   => $final_date,
                 '_offset'     => $pageNumber,
-                '_limit'      => '4',
+                '_limit'      => '50',
             ]);
 
         // Caso requisição não tenha sucesso.
@@ -244,7 +249,7 @@ class SantanderService
                         'initialDate' => $initial_date,
                         'finalDate'   => $final_date,
                         '_offset'     => $page,
-                        '_limit'      => '4',
+                        '_limit'      => '50',
                     ]);
 
                 // Checa se obteve transações na chave '_content'.

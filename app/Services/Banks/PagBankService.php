@@ -34,6 +34,12 @@ class PagBankService
         $this->token = base64_encode($user . ':' . $password);
     }
 
+    /*
+    Parâmetros:
+      pageSize: total máximo de itens por página => mín:1 máx:1000
+      pageNumber: de qual página a consulta deve trazer os resultados => padrão:1
+      tipoMovimento: 1 => transacional / 2 => financeiro / 3 => antecipação
+     */
     public function fetchAllTransactions(BankAccount $bankAccount, string $date): mixed
     {
         $allTransactions = [];
@@ -51,7 +57,7 @@ class PagBankService
                 'tipoMovimento' => '2',
                 'dataMovimento' => $date,
                 'pageNumber'    => $pageNumber,
-                'pageSize'      => '3',
+                'pageSize'      => '50',
             ]);
 
         // Caso requisição não tenha sucesso.
@@ -88,7 +94,7 @@ class PagBankService
                         'tipoMovimento' => '2',
                         'dataMovimento' => $date,
                         'pageNumber'    => $page,
-                        'pageSize'      => '3',
+                        'pageSize'      => '50',
                     ]);
 
                 // Checa se obteve transações na chave '_content'.
