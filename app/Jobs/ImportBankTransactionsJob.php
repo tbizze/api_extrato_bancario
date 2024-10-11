@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Models\{BankAccount, Transaction};
+use App\Models\{BankAccount, TaskLog, Transaction};
 use App\Services\TransactionManagerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,10 +50,22 @@ class ImportBankTransactionsJob implements ShouldQueue
 
                 // Se ocorreu erro, grava LOG avisando.
                 Log::error('ERROR AUTOMATIC IMPORT: ' . $transactions['error']);
+
+                // Registrar TaskLog de falha
+                TaskLog::create([
+                    'task_name' => 'Task: Importação Automática',
+                    'status'    => 'Erro:  Falha ao processar importação automática de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['error'],
+                ]);
             } elseif (isset($transactions) && is_array($transactions) && array_key_exists('info', $transactions)) {
 
                 // Se não retornou transações, grava LOG avisando.
                 Log::info('FAIL AUTOMATIC IMPORT: ' . $transactions['info']);
+
+                // Registrar TaskLog de falha
+                TaskLog::create([
+                    'task_name' => 'Task: Importação Automática',
+                    'status'    => 'Info: Não há dados para importar de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['info'],
+                ]);
             } else {
 
                 // Se retornado transações, salva do banco de dados.
@@ -61,6 +73,12 @@ class ImportBankTransactionsJob implements ShouldQueue
                 $number_transactions_import = count($transactions);
                 // Registra um log
                 Log::info("AUTOMATIC IMPORT: Efetuado $number_transactions_import importações de transações no BD.");
+
+                // Registrar TaskLog de falha
+                TaskLog::create([
+                    'task_name' => 'Task: Importação Automática',
+                    'status'    => 'Success: Efetuado ' . $number_transactions_import . ' importações de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id,
+                ]);
 
                 foreach ($transactions as $transaction) {
                     // Salva do banco de dados.
