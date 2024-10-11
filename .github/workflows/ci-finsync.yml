@@ -1,9 +1,8 @@
 name: FinSync CI
 
 on:
-  push:
-    branches:
-      - feature/API-48-criando-ci
+  pull_request:
+    branches: ["main", "develop"]
 
 jobs:
   build:
