@@ -33,7 +33,7 @@ jobs:
           REMOTE_USER: ${{ vars.REMOTE_USER }}
           REMOTE_PORT: ${{ vars.REMOTE_PORT }}
           TARGET: ${{ vars.TARGET }}
-          EXCLUDE: ".env, .htaccess, storage/app/private"
+          EXCLUDE: ".env, .htaccess, storage/app/private, storage/app/public, storage/logs"
 
       - name: Executa comandos remotos via ssh
         uses: appleboy/ssh-action@v1.0.3
