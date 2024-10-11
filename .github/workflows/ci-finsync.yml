@@ -1,0 +1,52 @@
+name: FinSync CI
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Checkout do repositório
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+
+      - name: Instalar Package.json
+        run: npm install
+      - name: Build Assets
+        run: npm run build
+
+      - name: Deploy para Servidor
+        uses: easingthemes/ssh-deploy@main
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          ARGS: "-rlgoDzvc -i --delete"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ vars.REMOTE_HOST }}
+          REMOTE_USER: ${{ vars.REMOTE_USER }}
+          REMOTE_PORT: ${{ vars.REMOTE_PORT }}
+          TARGET: ${{ vars.TARGET }}
+          EXCLUDE: ".env, .htaccess, storage/app/private, storage/app/public, storage/logs"
+
+      - name: Executa comandos remotos via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ vars.REMOTE_HOST }}
+          username: ${{ vars.REMOTE_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ vars.REMOTE_PORT }}
+          script: |
+            cp -f composer.phar ${{ vars.TARGET }}
+            cd ${{ vars.TARGET }}
+
+            # Baixar dependências de composer
+            php composer.phar install --no-dev --prefer-dist --optimize-autoloader
+
+            # Instalar tabelas no BD
+            php artisan migrate --force
