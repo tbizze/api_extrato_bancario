@@ -2,7 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Models\{BankAccount, TaskLog, Transaction};
+use App\Models\{BankAccount, TaskLog, Transaction, User};
+use App\Notifications\TaskStatusNotification;
 use App\Services\TransactionManagerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,7 +34,10 @@ class ImportBankTransactionsJob implements ShouldQueue
     public function handle(TransactionManagerService $transactionManager): void
     {
         // Obtém todas as contas bancárias cadastradas.
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::query()
+            ->where('account_agency', '=', '0001') // Considera apenas contas ativas.
+            // ->with('bank') // Eager load para evitar N+1
+            ->get();
 
         // Para cada conta, realiza a importação das transações
         foreach ($bankAccounts as $bankAccount) {
@@ -52,9 +56,10 @@ class ImportBankTransactionsJob implements ShouldQueue
                 Log::error('ERROR AUTOMATIC IMPORT: ' . $transactions['error']);
 
                 // Registrar TaskLog de falha
+                $status = 'Erro:  Falha ao processar importação automática de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['error'];
                 TaskLog::create([
                     'task_name' => 'Task: Importação Automática',
-                    'status'    => 'Erro:  Falha ao processar importação automática de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['error'],
+                    'status'    => $status,
                 ]);
             } elseif (isset($transactions) && is_array($transactions) && array_key_exists('info', $transactions)) {
 
@@ -62,9 +67,10 @@ class ImportBankTransactionsJob implements ShouldQueue
                 Log::info('FAIL AUTOMATIC IMPORT: ' . $transactions['info']);
 
                 // Registrar TaskLog de falha
+                $status = 'Info: Não há dados para importar de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['info'];
                 TaskLog::create([
                     'task_name' => 'Task: Importação Automática',
-                    'status'    => 'Info: Não há dados para importar de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id . ' >> ' . $transactions['info'],
+                    'status'    => $status,
                 ]);
             } else {
 
@@ -75,15 +81,23 @@ class ImportBankTransactionsJob implements ShouldQueue
                 Log::info("AUTOMATIC IMPORT: Efetuado $number_transactions_import importações de transações no BD.");
 
                 // Registrar TaskLog de falha
+                $status = 'Success: Efetuado ' . $number_transactions_import . ' importações de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id;
                 TaskLog::create([
                     'task_name' => 'Task: Importação Automática',
-                    'status'    => 'Success: Efetuado ' . $number_transactions_import . ' importações de ' . $bankAccount->bank->bank_name . '|' . $bankAccount->id,
+                    'status'    => $status,
                 ]);
 
                 foreach ($transactions as $transaction) {
                     // Salva do banco de dados.
                     Transaction::create($transaction);
                 }
+            }
+
+            // Enviar notificação para todos os usuários
+            $users = User::all();
+
+            foreach ($users as $user) {
+                $user->notify(new TaskStatusNotification($status));
             }
         }
     }
