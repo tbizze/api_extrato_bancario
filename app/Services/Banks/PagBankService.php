@@ -4,7 +4,7 @@ namespace App\Services\Banks;
 
 use App\Models\BankAccount;
 use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\{Crypt, Http, Log};
+use Illuminate\Support\Facades\{Crypt, Http, Log, Storage};
 
 class PagBankService
 {
@@ -38,13 +38,14 @@ class PagBankService
     Parâmetros:
       pageSize: total máximo de itens por página => mín:1 máx:1000
       pageNumber: de qual página a consulta deve trazer os resultados => padrão:1
-      tipoMovimento: 1 => transacional / 2 => financeiro / 3 => antecipação
+      tipoMovimento: 1 => transactional / 2 => financial / 3 => antecipação
      */
     public function fetchAllTransactions(BankAccount $bankAccount, string $date): mixed
     {
         $allTransactions = [];
-        $pageNumber      = 1;
         $totalPages      = 1;
+        $pageSize        = 50;
+        $url             = $this->baseUrl . "/transactional/{$date}";
 
         // Método para setar propriedades da classe.
         $this->setProperties($bankAccount);
@@ -53,11 +54,9 @@ class PagBankService
         $response = Http::withHeaders([
             'Authorization' => "Basic $this->token",
         ])
-            ->get($this->baseUrl . '/2.01/movimentos', [
-                'tipoMovimento' => '2',
-                'dataMovimento' => $date,
-                'pageNumber'    => $pageNumber,
-                'pageSize'      => '50',
+            ->get($url, [
+                'pageNumber' => '1',
+                'pageSize'   => $pageSize,
             ]);
 
         // Caso requisição não tenha sucesso.
@@ -90,11 +89,9 @@ class PagBankService
                 $response = Http::withHeaders([
                     'Authorization' => "Basic $this->token",
                 ])
-                    ->get($this->baseUrl . '/2.01/movimentos', [
-                        'tipoMovimento' => '2',
-                        'dataMovimento' => $date,
-                        'pageNumber'    => $page,
-                        'pageSize'      => '50',
+                    ->get($url, [
+                        'pageNumber' => $page,
+                        'pageSize'   => $pageSize,
                     ]);
 
                 // Checa se obteve transações na chave '_content'.
@@ -102,6 +99,11 @@ class PagBankService
                 $allTransactions = array_merge($allTransactions, $this->checkResponse($response));
             }
         }
+        $filePath = $this->saveTransactionsJson($allTransactions, $date, $bankAccount->id);
+        $filePath = $this->saveTransactionsFormattedTxt($allTransactions, $date, $bankAccount->id);
+
+        //dump($filePath);
+        //dd($allTransactions);
 
         // Checa se foi inserido transações no array.
         // Formata transações obtidas, conforme padrão. Depois retorna.
@@ -234,7 +236,7 @@ class PagBankService
                 'type'            => 'credit',
                 'description'     => $this->makeDescriptions($transaction),
                 'amount'          => $transaction['valor_total_transacao'],
-                'date'            => $transaction['data_movimentacao'],
+                'date'            => $transaction['data_prevista_pagamento'] ?? '', // era: data_movimentacao
                 'bank_account_id' => $this->bankAccount->id,
             ];
         })->toArray();
@@ -259,5 +261,106 @@ class PagBankService
 
         // Outros tipos de recebimento.
         return 'Recebimento de valor';
+    }
+
+    /**
+     * Salva as transações em arquivo JSON.
+     *
+     * @param  array<int|string, mixed>  $transactions
+     * @param  string  $date
+     * @param  int  $bankAccountId
+     * @return string
+     */
+    public function saveTransactionsJson(array $transactions, string $date, int $bankAccountId): string
+    {
+        $filename = "extratos/account{$bankAccountId}/{$date}.json";
+        $content  = json_encode($transactions, JSON_PRETTY_PRINT);
+
+        Storage::disk('local')->put($filename, $content);
+
+        return storage_path("app/{$filename}");
+    }
+
+    // Não está sendo usado.
+    /* public function saveTransactionsToTxt(array $transactions, string $date): string
+    {
+        $filename = "extratos/extrato_{$date}.txt";
+
+        // Converter o array para formato legível
+        $content = print_r($transactions, true);
+
+        // Salvar no storage (pasta storage/app/extratos)
+        Storage::disk('local')->put($filename, $content);
+
+        // Retornar o caminho completo do arquivo
+        return storage_path("app/{$filename}");
+    } */
+
+    /**
+     * Salva as transações em arquivo TXT.
+     *
+     * @param  array<int|string, mixed>  $transactions
+     * @param  string  $date
+     * @param  int  $bankAccountId
+     * @return string
+     */
+    public function saveTransactionsFormattedTxt(array $transactions, string $date, int $bankAccountId): string
+    {
+        $filename = "extratos/account{$bankAccountId}/formatado_{$date}.txt";
+        $content  = "";
+
+        foreach ($transactions as $transaction) {
+            $numero_serie_leitor = $transaction['numero_serie_leitor'] ?? '';
+            $tx_id               = $transaction['tx_id'] ?? '';
+
+            $content .= "Transação: {$transaction['codigo_transacao']}\n";
+            $content .= "Data operação: {$transaction['data_inicial_transacao']} {$transaction['hora_inicial_transacao']}\n";
+            $content .= "Data prévia pgto: {$transaction['data_prevista_pagamento']}\n";
+            $content .= "Valor: {$transaction['valor_total_transacao']}\n";
+            $content .= "Taxa: {$transaction['taxa_intermediacao']}\n";
+            $content .= "Parcelas: {$transaction['quantidade_parcelas']}\n";
+            $content .= "Meio Pagamento: {$transaction['meio_pagamento']}\n";
+            $content .= "Instituicao: {$transaction['instituicao_financeira']}\n";
+            $content .= "Tx Id: {$tx_id}\n";
+            $content .= "Nº Leitor: {$numero_serie_leitor}\n";
+            $content .= "Leitor: {$this->getLeitor($numero_serie_leitor)}\n";
+            $content .= "Tipo: {$transaction['arranjo_ur']}\n";
+            $content .= str_repeat("-", 50) . "\n\n";
+        }
+
+        Storage::disk('local')->put($filename, $content);
+
+        return storage_path("app/{$filename}");
+    }
+
+    // Método retorna o nome do leitor conforme número de série.
+    public function getLeitor(string $numero_serie_leitor): string
+    {
+        // Se não tiver número de série, retorna 'nenhum'.
+        // Geralmente pix por QRCode emitido sem maquininha.
+        if ($numero_serie_leitor === '') {
+            // Log para monitorar leitores não mapeados
+            Log::info('Transação sem Leitor processada');
+
+            return 'nenhum';
+        }
+
+        $list = [
+            '542-310-478'  => 'nova-matriz',
+            '1731279966'   => 'com-nsa',
+            'J9B405443710' => 'dizimo',
+            '2130671458'   => 'lojinha',
+            '6C282744'     => 'lar-idosos',
+        ];
+
+        if (!isset($list[$numero_serie_leitor])) {
+            // Log para monitorar leitores não mapeados
+            Log::warning('Leitor não mapeado encontrado', [
+                'numero_serie' => $numero_serie_leitor,
+            ]);
+        }
+
+        // Retornar o nome do leitor
+        return $list[$numero_serie_leitor] ?? 'desconhecido';
     }
 }
