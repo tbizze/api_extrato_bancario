@@ -15,29 +15,29 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Criar uma empresa
-        $company = Company::create([
-            'name' => 'FinSync Company',
-            'cnpj' => '',
-        ]);
+        // $company = Company::create([
+        //     'name' => 'FinSync Company',
+        //     'cnpj' => '',
+        // ]);
 
         // Criar superusuário
-        User::create([
-            'name'              => 'Super Admin',
-            'email'             => 'admin@test',
-            'password'          => Hash::make('123'),
-            'company_id'        => $company->id,
-            'is_superuser'      => true,
-            'email_verified_at' => now(),
-            'remember_token'    => Str::random(10),
-        ]);
+        // User::create([
+        //     'name'              => 'Super Admin',
+        //     'email'             => 'admin@test',
+        //     'password'          => Hash::make('123'),
+        //     'company_id'        => $company->id,
+        //     'is_superuser'      => true,
+        //     'email_verified_at' => now(),
+        //     'remember_token'    => Str::random(10),
+        // ]);
 
         // Criar um usuário comum
-        // User::factory()->create([
-        //     'name'         => 'Usuário Comum',
-        //     'email'        => 'user@test',
-        //     'password'     => Hash::make('123'),
-        //     'company_id'   => $company->id,
-        //     'is_superuser' => false,
-        // ]);
+        User::factory()->create([
+            'name'         => 'Usuário Comum',
+            'email'        => 'user@test',
+            'password'     => Hash::make('123'),
+            'company_id'   => 2,
+            'is_superuser' => false,
+        ]);
     }
 }
