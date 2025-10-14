@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     if (app()->isLocal()) {
         // Para fins de teste, faça login como usuário com ID 1 no desenvolvimento local.
-        auth()->loginUsingId(1);
+        auth()->loginUsingId(2);
 
         return to_route('dashboard');
     }
@@ -68,6 +68,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
         ->name('bank-accounts.transactions.import');
 });
+
+Route::get('toast', [HomeController::class, 'testNotification']);
 
 // Testes para requisições a API de livre acesso.
 // Não faz uso de chave (token) de segurança, nem certificado digital.
