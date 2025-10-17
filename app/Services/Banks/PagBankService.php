@@ -2,12 +2,14 @@
 
 namespace App\Services\Banks;
 
-use App\Models\BankAccount;
+use App\Models\{BankAccount, PagbankTransaction};
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\{Crypt, Http, Log, Storage};
 
 class PagBankService
 {
+    protected string $pageSize;
+
     protected string $baseUrl;
 
     protected string $token;
@@ -17,7 +19,8 @@ class PagBankService
     // Método construtor da classe.
     public function __construct()
     {
-        $this->baseUrl = env('PAGBANK_BASE_URI');
+        $this->baseUrl  = env('PAGBANK_BASE_URI');
+        $this->pageSize = '50';
     }
 
     // Método define propriedades da classe, a partir BankAccount recebido como argumento.
@@ -44,7 +47,6 @@ class PagBankService
     {
         $allTransactions = [];
         $totalPages      = 1;
-        $pageSize        = 50;
         $url             = $this->baseUrl . "/transactional/{$date}";
 
         // Método para setar propriedades da classe.
@@ -56,7 +58,7 @@ class PagBankService
         ])
             ->get($url, [
                 'pageNumber' => '1',
-                'pageSize'   => $pageSize,
+                'pageSize'   => $this->pageSize,
             ]);
 
         // Caso requisição não tenha sucesso.
@@ -91,7 +93,83 @@ class PagBankService
                 ])
                     ->get($url, [
                         'pageNumber' => $page,
-                        'pageSize'   => $pageSize,
+                        'pageSize'   => $this->pageSize,
+                    ]);
+
+                // Checa se obteve transações na chave '_content'.
+                // Adiciona transações retornadas à lista de transações.
+                $allTransactions = array_merge($allTransactions, $this->checkResponse($response));
+            }
+        }
+        //$filePath = $this->saveTransactionsJson($allTransactions, $date, $bankAccount->id);
+        //$filePath = $this->saveTransactionsToTxt($allTransactions, $date, $bankAccount->id);
+
+        //dump($filePath);
+        //dd($allTransactions);
+
+        // Checa se foi inserido transações no array.
+        // Formata transações obtidas, conforme padrão. Depois retorna.
+        if (!empty($allTransactions)) {
+
+            // return $this->formatTransactions($allTransactions);
+            return $allTransactions;
+        } else {
+
+            // Retorna mensagem informando que não obteve transações.
+            return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+        }
+    }
+    public function fetchAllTransactionsBKP(BankAccount $bankAccount, string $date): mixed
+    {
+        $allTransactions = [];
+        $totalPages      = 1;
+        $url             = $this->baseUrl . "/transactional/{$date}";
+
+        // Método para setar propriedades da classe.
+        $this->setProperties($bankAccount);
+
+        // Faz a requisição para obter as transações.
+        $response = Http::withHeaders([
+            'Authorization' => "Basic $this->token",
+        ])
+            ->get($url, [
+                'pageNumber' => '1',
+                'pageSize'   => $this->pageSize,
+            ]);
+
+        // Caso requisição não tenha sucesso.
+        if ($response->failed()) {
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->checkResponse($response);
+        }
+
+        // Coloca o response da API em variável json.
+        $transactions = $response->json();
+
+        // Checa se obteve transações na chave 'detalhes'.
+        // Adiciona transações retornadas à lista de transações.
+        if (array_key_exists('detalhes', $transactions) && count($transactions['detalhes'])) {
+            $allTransactions = array_merge($allTransactions, $transactions['detalhes']);
+        }
+
+        // Checa informações de páginas na chave 'pagination'.
+        // Pega o total de páginas.
+        if (array_key_exists('pagination', $transactions) && count($transactions['pagination'])) {
+            $totalPages = $transactions['pagination']['totalPages'];
+        }
+
+        // Caso o número de páginas seja maior que um.
+        if ($totalPages > 1) {
+            // Executa um Loop até que atinja o número total de páginas.
+            for ($page = 2; $page <= $totalPages; $page++) {
+
+                // Faz a requisição para obter as transações da próxima página.
+                $response = Http::withHeaders([
+                    'Authorization' => "Basic $this->token",
+                ])
+                    ->get($url, [
+                        'pageNumber' => $page,
+                        'pageSize'   => $this->pageSize,
                     ]);
 
                 // Checa se obteve transações na chave '_content'.
@@ -100,7 +178,159 @@ class PagBankService
             }
         }
         $filePath = $this->saveTransactionsJson($allTransactions, $date, $bankAccount->id);
-        $filePath = $this->saveTransactionsFormattedTxt($allTransactions, $date, $bankAccount->id);
+        $filePath = $this->saveTransactionsToTxt($allTransactions, $date, $bankAccount->id);
+
+        //dump($filePath);
+        //dd($allTransactions);
+
+        // Checa se foi inserido transações no array.
+        // Formata transações obtidas, conforme padrão. Depois retorna.
+        if (!empty($allTransactions)) {
+
+            return $this->formatTransactions($allTransactions);
+        } else {
+
+            // Retorna mensagem informando que não obteve transações.
+            return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+        }
+    }
+
+    public function fetchAllFinancials(BankAccount $bankAccount, string $date): mixed
+    {
+        $allTransactions = [];
+        $totalPages      = 1;
+        $url             = $this->baseUrl . "/financial/{$date}";
+
+        // Método para setar propriedades da classe.
+        $this->setProperties($bankAccount);
+
+        // Faz a requisição para obter as transações.
+        $response = Http::withHeaders([
+            'Authorization' => "Basic $this->token",
+        ])
+            ->get($url, [
+                'pageNumber' => '1',
+                'pageSize'   => $this->pageSize,
+            ]);
+
+        // Caso requisição não tenha sucesso.
+        if ($response->failed()) {
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->checkResponse($response);
+        }
+
+        // Coloca o response da API em variável json.
+        $transactions = $response->json();
+
+        // Checa se obteve transações na chave 'detalhes'.
+        // Adiciona transações retornadas à lista de transações.
+        if (array_key_exists('detalhes', $transactions) && count($transactions['detalhes'])) {
+            $allTransactions = array_merge($allTransactions, $transactions['detalhes']);
+        }
+
+        // Checa informações de páginas na chave 'pagination'.
+        // Pega o total de páginas.
+        if (array_key_exists('pagination', $transactions) && count($transactions['pagination'])) {
+            $totalPages = $transactions['pagination']['totalPages'];
+        }
+
+        // Caso o número de páginas seja maior que um.
+        if ($totalPages > 1) {
+            // Executa um Loop até que atinja o número total de páginas.
+            for ($page = 2; $page <= $totalPages; $page++) {
+
+                // Faz a requisição para obter as transações da próxima página.
+                $response = Http::withHeaders([
+                    'Authorization' => "Basic $this->token",
+                ])
+                    ->get($url, [
+                        'pageNumber' => $page,
+                        'pageSize'   => $this->pageSize,
+                    ]);
+
+                // Checa se obteve transações na chave '_content'.
+                // Adiciona transações retornadas à lista de transações.
+                $allTransactions = array_merge($allTransactions, $this->checkResponse($response));
+            }
+        }
+        //$filePath = $this->saveTransactionsJson($allTransactions, $date, $bankAccount->id);
+        //$filePath = $this->saveTransactionsToTxt($allTransactions, $date, $bankAccount->id);
+
+        //dump($filePath);
+        //dd($allTransactions);
+
+        // Checa se foi inserido transações no array.
+        // Formata transações obtidas, conforme padrão. Depois retorna.
+        if (!empty($allTransactions)) {
+
+            // return $this->formatTransactions($allTransactions);
+            return $allTransactions;
+        } else {
+
+            // Retorna mensagem informando que não obteve transações.
+            return ['info' => 'Sem transações.', 'message' => 'Não há transações para esse período.'];
+        }
+    }
+    public function fetchAllFinancialsBKP(BankAccount $bankAccount, string $date): mixed
+    {
+        $allTransactions = [];
+        $totalPages      = 1;
+        $url             = $this->baseUrl . "/financial/{$date}";
+
+        // Método para setar propriedades da classe.
+        $this->setProperties($bankAccount);
+
+        // Faz a requisição para obter as transações.
+        $response = Http::withHeaders([
+            'Authorization' => "Basic $this->token",
+        ])
+            ->get($url, [
+                'pageNumber' => '1',
+                'pageSize'   => $this->pageSize,
+            ]);
+
+        // Caso requisição não tenha sucesso.
+        if ($response->failed()) {
+            // Antes de retornar, trata o erro retornado no response.
+            return $this->checkResponse($response);
+        }
+
+        // Coloca o response da API em variável json.
+        $transactions = $response->json();
+
+        // Checa se obteve transações na chave 'detalhes'.
+        // Adiciona transações retornadas à lista de transações.
+        if (array_key_exists('detalhes', $transactions) && count($transactions['detalhes'])) {
+            $allTransactions = array_merge($allTransactions, $transactions['detalhes']);
+        }
+
+        // Checa informações de páginas na chave 'pagination'.
+        // Pega o total de páginas.
+        if (array_key_exists('pagination', $transactions) && count($transactions['pagination'])) {
+            $totalPages = $transactions['pagination']['totalPages'];
+        }
+
+        // Caso o número de páginas seja maior que um.
+        if ($totalPages > 1) {
+            // Executa um Loop até que atinja o número total de páginas.
+            for ($page = 2; $page <= $totalPages; $page++) {
+
+                // Faz a requisição para obter as transações da próxima página.
+                $response = Http::withHeaders([
+                    'Authorization' => "Basic $this->token",
+                ])
+                    ->get($url, [
+                        'pageNumber' => $page,
+                        'pageSize'   => $this->pageSize,
+                    ]);
+
+                // Checa se obteve transações na chave '_content'.
+                // Adiciona transações retornadas à lista de transações.
+                $allTransactions = array_merge($allTransactions, $this->checkResponse($response));
+            }
+        }
+        $filePath = $this->saveTransactionsJson($allTransactions, $date, $bankAccount->id);
+        $filePath = $this->saveTransactionsToTxt($allTransactions, $date, $bankAccount->id);
 
         //dump($filePath);
         //dd($allTransactions);
@@ -271,30 +501,20 @@ class PagBankService
      * @param  int  $bankAccountId
      * @return string
      */
-    public function saveTransactionsJson(array $transactions, string $date, int $bankAccountId): string
+    public function saveTransactionsJson(array $transactions, string $date, int $bankAccountId, bool $financial = false): string
     {
-        $filename = "extratos/account{$bankAccountId}/{$date}.json";
-        $content  = json_encode($transactions, JSON_PRETTY_PRINT);
+        if ($financial == true) {
+            $filename = "extratos/account{$bankAccountId}/financial/{$date}.json";
+        } else {
+            $filename = "extratos/account{$bankAccountId}/{$date}.txt";
+        }
+        //$filename = "extratos/account{$bankAccountId}/{$date}.json";
+        $content = json_encode($transactions, JSON_PRETTY_PRINT);
 
         Storage::disk('local')->put($filename, $content);
 
         return storage_path("app/{$filename}");
     }
-
-    // Não está sendo usado.
-    /* public function saveTransactionsToTxt(array $transactions, string $date): string
-    {
-        $filename = "extratos/extrato_{$date}.txt";
-
-        // Converter o array para formato legível
-        $content = print_r($transactions, true);
-
-        // Salvar no storage (pasta storage/app/extratos)
-        Storage::disk('local')->put($filename, $content);
-
-        // Retornar o caminho completo do arquivo
-        return storage_path("app/{$filename}");
-    } */
 
     /**
      * Salva as transações em arquivo TXT.
@@ -302,12 +522,18 @@ class PagBankService
      * @param  array<int|string, mixed>  $transactions
      * @param  string  $date
      * @param  int  $bankAccountId
+     * @param  bool  $financial
      * @return string
      */
-    public function saveTransactionsFormattedTxt(array $transactions, string $date, int $bankAccountId): string
+    public function saveTransactionsToTxt(array $transactions, string $date, int $bankAccountId, bool $financial = false): string
     {
-        $filename = "extratos/account{$bankAccountId}/formatado_{$date}.txt";
-        $content  = "";
+        if ($financial == true) {
+            $filename = "extratos/account{$bankAccountId}/financial/formatado_{$date}.txt";
+        } else {
+            $filename = "extratos/account{$bankAccountId}/formatado_{$date}.txt";
+        }
+        //$filename = "extratos/account{$bankAccountId}/formatado_{$date}.txt";
+        $content = "";
 
         foreach ($transactions as $transaction) {
             $numero_serie_leitor = $transaction['numero_serie_leitor'] ?? '';
@@ -362,5 +588,101 @@ class PagBankService
 
         // Retornar o nome do leitor
         return $list[$numero_serie_leitor] ?? 'desconhecido';
+    }
+
+    /**
+     * Salva as transações em DB.
+     *
+     * @param  array<int|string, mixed>  $transactions
+     * @param  int  $bankAccountId
+     * @return int
+     */
+    public function saveTransactionsDb(array $transactions, int $bankAccountId): int
+    {
+        // Se retornado transações, salva do banco de dados.
+        foreach ($transactions as $transaction) {
+            //dd($transaction);
+
+            $tipo                = $transaction['arranjo_ur'] ?? '';
+            $numero_serie_leitor = $transaction['numero_serie_leitor'] ?? '';
+            $tx_id               = $transaction['tx_id'] ?? '';
+            $valor_tarifas       = $transaction['taxa_intermediacao'] + $transaction['tarifa_intermediacao'];
+
+            if ($tipo == 'PIX') {
+                if ($numero_serie_leitor == '' || $numero_serie_leitor == null) {
+                    $description = "Recbto PIX QRCode | {$tx_id}";
+                } else {
+                    $description = "Recbto PIX Leitor| {$tx_id}";
+                }
+            } else {
+                $description = "Recbto {$transaction['instituicao_financeira']} | Cartão ****{$transaction['cartao_holder']} | Meio Pagamento: {$transaction['meio_pagamento']}";
+            }
+            // Recbto PIX QRCode | PAGS000010000221122091998
+            // Recbto PIX Leitor | 20250930201913008660785179669317
+            // Recbto VISA ELECTRON | Cartão ****0016 | Meio Pagamento: 11
+
+            // Salva do banco de dados.
+            PagbankTransaction::create([
+                'bank_account_id'  => $bankAccountId,
+                'cod_transacao'    => $transaction['codigo_transacao'],
+                'dt_transacao'     => $transaction['data_inicial_transacao'] . ' ' . $transaction['hora_inicial_transacao'],
+                'dt_pgto_prevista' => $transaction['data_prevista_pagamento'],
+                'valor_transacao'  => $transaction['valor_total_transacao'],
+                'valor_tarifas'    => $valor_tarifas,
+                'qde_parcelas'     => $transaction['quantidade_parcelas'],
+                'description'      => $description,
+                'id_leitor'        => $numero_serie_leitor,
+                'tx_id'            => $tx_id,
+                'tipo'             => $transaction['arranjo_ur'],
+                'status'           => 'previsao',
+            ]);
+        }
+        $number_transactions_import = count($transactions);
+
+        // Retornar o nome do leitor
+        return $number_transactions_import;
+    }
+
+    /**
+     * Atualiza as transações em DB.
+     *
+     * @param  array<int|string, mixed>  $transactions
+     * @return int
+     */
+    public function updateTransactionsDb(array $transactions): int
+    {
+        // Se retornado transações, salva do banco de dados.
+        foreach ($transactions as $transaction) {
+            $data = PagbankTransaction::query()
+                ->where('cod_transacao', $transaction['codigo_transacao'])
+                ->first();
+
+            // Garantir que os valores sejam float antes da soma e comparação
+            $taxa_intermediacao   = (float)($transaction['taxa_intermediacao'] ?? 0);
+            $tarifa_intermediacao = (float)($transaction['tarifa_intermediacao'] ?? 0);
+
+            $valor_tarifas     = $taxa_intermediacao + $tarifa_intermediacao;
+            $valor_tarifas_old = (float)($data->valor_tarifas ?? 0.00);
+
+            if ($data && $valor_tarifas > $valor_tarifas_old) {
+                $notes = 'Tarifa atualizada';
+            } else {
+                $notes = '';
+            }
+
+            if ($data) {
+                $data->update([
+                    'status' => 'confirmado',
+                    'notes'  => $notes,
+                ]);
+            }
+        }
+        //dump($transaction);
+        //dd($data->toArray());
+
+        $number_transactions_import = count($transactions);
+
+        // Retornar o nome do leitor
+        return $number_transactions_import;
     }
 }
