@@ -1,14 +1,3 @@
-Criar uma tabela exclusiva para transações do PagSeguro:
-
-id_transacao: F78965AC3EF34BAD9830AC44275138C4
-dt_operacao: 2025-09-30 20:19:21
-dt_pgto_prevista: 2025-09-30
-valor: 100
-tarifa: 0.99
-descricao: Instituicao: BACEN - Parcelas: 0 - Meio Pagamento: 11
-id_leitor: 1731279966
-tipo: PIX
-
 Ideia:
 Trabalhar com dois recursos com o PagSeguro:
 
@@ -23,6 +12,7 @@ Trabalhar com dois recursos com o PagSeguro:
 Precisamos separar a lógica de consultar transações da lógica de salvar TXT, JSON e DB.
 Assim, no futuro, quando precisar atualizar/modificar uma única alteração já serve pra todos.
 
+- em TransactionManagerService, criar o método importAutomaticPagbank para realizar o auto import do Pagbank: transações e operações financeiras.
 - fetchAllTransactions: traz todas as transações (previsão, algumas ainda não liberadas pelo banco, como crédito - 30 dias; ou débito, 1 dia). Argumentos: conta e data.
 - fetchAllFinancials: traz todas as transações (liberadas pelo banco, crédito na conta). Argumentos: conta e data.
 - saveTransactionsJson: Salva as transações em arquivo JSON. Argumentos: transações e conta.
