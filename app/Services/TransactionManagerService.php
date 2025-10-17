@@ -56,6 +56,77 @@ class TransactionManagerService
         return $transactions;
     }
 
+    public function importFinancials(BankAccount $bankAccount, string $initial_date, string|null $final_date): mixed
+    {
+        // Array para armazenar as transações retornadas da API.
+        $transactions = [];
+
+        // Se falhar Checagem das credenciais, retorna mensagem informando.
+        if (!$this->checkBankAccount(2, $bankAccount)) {
+            return ['info' => 'Credenciais inválidas.', 'message' => 'Não foi configurado credencias para comunicação com API do banco.'];
+        }
+
+        // Informar o BankAccount. Com ele o serviço do PagBank obtêm as credenciais (clientId, token).
+        // Informar a data a obter as transações.
+        $transactions = $this->pagBankService->fetchAllFinancials($bankAccount, $initial_date);
+
+        //dd($initial_date);
+
+        // Salva arquivo txt e json com as transações obtidas.
+        $y = $this->pagBankService->saveTransactionsToTxt($transactions, $initial_date, $bankAccount->id, true);
+        $y = $this->pagBankService->saveTransactionsJson($transactions, $initial_date, $bankAccount->id, true);
+        //dump($y);
+
+        // Salva no banco de dados as transações obtidas.
+        $x = $this->pagBankService->updateTransactionsDb($transactions, $bankAccount);
+        //dd($x);
+
+        // Devolve ao controller os dados obtidos da API do banco.
+        return $transactions;
+    }
+
+    public function importAutomaticPagbank(BankAccount $bankAccount, string $initial_date, string|null $final_date): mixed
+    {
+        // Array para armazenar as transações retornadas da API.
+        $transactions = [];
+
+        // Se falhar Checagem das credenciais, retorna mensagem informando.
+        if (!$this->checkBankAccount(2, $bankAccount)) {
+            return ['info' => 'Credenciais inválidas.', 'message' => 'Não foi configurado credencias para comunicação com API do banco.'];
+        }
+
+        /* Importar transações
+           Argumento: BankAccount. Com ele o serviço do PagBank obtêm as credenciais (clientId, token).
+           Argumento: Data. Período a obter as transações.
+        */
+        $transactions = $this->pagBankService->fetchAllTransactions($bankAccount, $initial_date);
+
+        // Salva no banco de dados as transações obtidas.
+        $qdeTransacoes = $this->pagBankService->saveTransactionsDb($transactions, $bankAccount);
+
+        // Salva arquivo txt e json com as transações obtidas.
+        $this->pagBankService->saveTransactionsToTxt($transactions, $initial_date, $bankAccount->id);
+        $this->pagBankService->saveTransactionsJson($transactions, $initial_date, $bankAccount->id);
+
+        /* Importar transações pagas
+           Argumento: BankAccount. Com ele o serviço do PagBank obtêm as credenciais (clientId, token).
+           Argumento: Data. Período a obter as transações.
+        */
+        $transactions = $this->pagBankService->fetchAllFinancials($bankAccount, $initial_date);
+
+        // Atualiza no banco de dados as transações obtidas.
+        $qdeTransacoesPagas = $this->pagBankService->updateTransactionsDb($transactions, $bankAccount);
+
+        // Salva arquivo txt e json com as transações obtidas.
+        $this->pagBankService->saveTransactionsToTxt($transactions, $initial_date, $bankAccount->id, true);
+        $this->pagBankService->saveTransactionsJson($transactions, $initial_date, $bankAccount->id, true);
+
+        //dd($qdeTransacoes, $qdeTransacoesPagas);
+
+        // Devolve ao controller os dados obtidos da API do banco.
+        return $transactions;
+    }
+
     public function importAutomaticTransactions(BankAccount $bankAccount): mixed
     {
         // Array para armazenar as transações retornadas da API.
