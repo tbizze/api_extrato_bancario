@@ -13,14 +13,16 @@ class TestImportPagbankTransactions extends Command
      *
      * @var string
      */
-    protected $signature = 'app:import-pagbank';
+    protected $signature = 'app:import-pagbank
+                            {startDate : Data inicial (YYYY-MM-DD)}
+                            {endDate : Data final (YYYY-MM-DD)}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Dispara em fila a importação Pagbank';
+    protected $description = 'Dispara em fila a importação Pagbank. Separar argumento com espaço';
 
     /**
      * Execute the console command.
@@ -31,8 +33,18 @@ class TestImportPagbankTransactions extends Command
         // Emite mensagem de retorno.
         // $this->info('Tarefa agendada com sucesso.');
 
+        $startDate = $this->argument('startDate');
+        $endDate   = $this->argument('endDate');
+
+        // Validação básica
+        if (!strtotime($startDate) || !strtotime($endDate)) {
+            $this->error('Formato de data inválido. Use YYYY-MM-DD');
+
+            return;
+        }
+
         // Cria múltiplas datas
-        $dates = $this->generateDateRange('2025-10-03', '2025-10-03');
+        $dates = $this->generateDateRange($startDate, $endDate);
 
         // Faz loop na lista de datas
         foreach ($dates as $date) {
