@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 //use Illuminate\Http\Request;
 
 use App\Services\ApiService;
-use Illuminate\Http\{JsonResponse};
+use Illuminate\Http\{JsonResponse, RedirectResponse};
 
 class HomeController extends Controller
 {
@@ -45,5 +45,22 @@ class HomeController extends Controller
         // }
 
         return response()->json(['message' => 'Dados postados com sucesso!', $dados]);
+    }
+
+    public function testNotification(): RedirectResponse
+    {
+        $notification = [
+            'title'   => 'Controller Notificação',
+            'content' => 'Este é um teste de notificação via controller.',
+        ];
+        //dd($notification);
+
+        //$this->apiTest->sendNotification($notification);
+
+        //return response()->json(['message' => 'Notificação enviada com sucesso!']);
+
+        // Se não retornou transações, emite uma mensagem avisando.
+        return redirect()->route('dashboard')
+            ->with('info', $notification['content']);
     }
 }
