@@ -506,7 +506,7 @@ class PagBankService
         if ($financial == true) {
             $filename = "extratos/account{$bankAccountId}/financial/{$date}.json";
         } else {
-            $filename = "extratos/account{$bankAccountId}/{$date}.txt";
+            $filename = "extratos/account{$bankAccountId}/{$date}.json";
         }
         //$filename = "extratos/account{$bankAccountId}/{$date}.json";
         $content = json_encode($transactions, JSON_PRETTY_PRINT);
@@ -565,9 +565,6 @@ class PagBankService
         // Se não tiver número de série, retorna 'nenhum'.
         // Geralmente pix por QRCode emitido sem maquininha.
         if ($numero_serie_leitor === '') {
-            // Log para monitorar leitores não mapeados
-            Log::info('Transação sem Leitor processada');
-
             return 'nenhum';
         }
 
@@ -599,6 +596,8 @@ class PagBankService
      */
     public function saveTransactionsDb(array $transactions, int $bankAccountId): int
     {
+        $number_transactions_import = 0;
+
         // Se retornado transações, salva do banco de dados.
         foreach ($transactions as $transaction) {
             //dd($transaction);
@@ -617,29 +616,30 @@ class PagBankService
             } else {
                 $description = "Recbto {$transaction['instituicao_financeira']} | Cartão ****{$transaction['cartao_holder']} | Meio Pagamento: {$transaction['meio_pagamento']}";
             }
-            // Recbto PIX QRCode | PAGS000010000221122091998
-            // Recbto PIX Leitor | 20250930201913008660785179669317
-            // Recbto VISA ELECTRON | Cartão ****0016 | Meio Pagamento: 11
 
-            // Salva do banco de dados.
-            PagbankTransaction::create([
-                'bank_account_id'  => $bankAccountId,
-                'cod_transacao'    => $transaction['codigo_transacao'],
-                'dt_transacao'     => $transaction['data_inicial_transacao'] . ' ' . $transaction['hora_inicial_transacao'],
-                'dt_pgto_prevista' => $transaction['data_prevista_pagamento'],
-                'valor_transacao'  => $transaction['valor_total_transacao'],
-                'valor_tarifas'    => $valor_tarifas,
-                'qde_parcelas'     => $transaction['quantidade_parcelas'],
-                'description'      => $description,
-                'id_leitor'        => $numero_serie_leitor,
-                'tx_id'            => $tx_id,
-                'tipo'             => $transaction['arranjo_ur'],
-                'status'           => 'previsao',
-            ]);
+            // Quando codigo_transacao não existe no DB
+            if (!$this->checkTransactionExists($transaction['codigo_transacao'])) {
+                // Salva do banco de dados.
+                PagbankTransaction::create([
+                    'bank_account_id'  => $bankAccountId,
+                    'cod_transacao'    => $transaction['codigo_transacao'],
+                    'dt_transacao'     => $transaction['data_inicial_transacao'] . ' ' . $transaction['hora_inicial_transacao'],
+                    'dt_pgto_prevista' => $transaction['data_prevista_pagamento'],
+                    'valor_transacao'  => $transaction['valor_total_transacao'],
+                    'valor_tarifas'    => $valor_tarifas,
+                    'qde_parcelas'     => $transaction['quantidade_parcelas'],
+                    'description'      => $description,
+                    'id_leitor'        => $numero_serie_leitor,
+                    'tx_id'            => $tx_id,
+                    'tipo'             => $transaction['arranjo_ur'],
+                    'status'           => 'previsao',
+                ]);
+                // Adiciona mais um
+                $number_transactions_import = $number_transactions_import + 1;
+            }
         }
-        $number_transactions_import = count($transactions);
 
-        // Retornar o nome do leitor
+        // Retornar o número de transações salvas
         return $number_transactions_import;
     }
 
@@ -672,8 +672,9 @@ class PagBankService
 
             if ($data) {
                 $data->update([
-                    'status' => 'confirmado',
-                    'notes'  => $notes,
+                    'status'          => 'confirmado',
+                    'dt_pgto_efetiva' => $transaction['data_movimentacao'],
+                    'notes'           => $notes,
                 ]);
             }
         }
@@ -684,5 +685,11 @@ class PagBankService
 
         // Retornar o nome do leitor
         return $number_transactions_import;
+    }
+
+    // Verifica se existe transação em DB pelo 'cod_transacao'
+    public function checkTransactionExists(string $codTransacao): bool
+    {
+        return PagbankTransaction::where('cod_transacao', $codTransacao)->exists();
     }
 }
