@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\{BankAccount, TaskLog};
+use App\Notifications\TaskStatusNotification;
 use App\Services\TransactionManagerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -33,7 +34,7 @@ class ImportPagbankTransactionsJob implements ShouldQueue
         // Obtém todas as contas bancárias cadastradas.
         $bankAccounts = BankAccount::query()
             ->where('bank_id', '=', 2) // Apenas contas Pagbank.
-            ->where('id', '=', 3) // Apenas a conta de ID 2: Paróquia / ID 3 Lar dos Idosos.
+            //->where('id', '=', 2) // Apenas a conta de ID 2: Paróquia / ID 3 Lar dos Idosos.
             ->get();
 
         // Para cada conta, realiza a importação das transações
@@ -125,12 +126,13 @@ class ImportPagbankTransactionsJob implements ShouldQueue
                 ]);
             }
 
-            // Enviar notificação para todos os usuários
-            // $users = User::all();
+            // Enviar notificação para os usuários do BankAccount
+            // Pelo bankAccount, busca a company. Com isso lista os usuários dessa company.
+            $users = $bankAccount->company->users;
 
-            // foreach ($users as $user) {
-            //     $user->notify(new TaskStatusNotification($status));
-            // }
+            foreach ($users as $user) {
+                $user->notify(new TaskStatusNotification($status));
+            }
         }
     }
 }
