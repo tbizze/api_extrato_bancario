@@ -614,7 +614,7 @@ class PagBankService
                     $description = "Recbto PIX Leitor| {$tx_id}";
                 }
             } else {
-                $description = "Recbto {$transaction['instituicao_financeira']} | Cartão ****{$transaction['cartao_holder']} | Meio Pagamento: {$transaction['meio_pagamento']}";
+                $description = "Recbto {$transaction['instituicao_financeira']} | Cartão ****{$transaction['cartao_holder']} | Cod_cv {$transaction['codigo_cv']} | Meio Pgto: {$transaction['meio_pagamento']}";
             }
 
             // Quando codigo_transacao não existe no DB
