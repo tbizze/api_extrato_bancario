@@ -23,6 +23,8 @@
 <body class="font-sans antialiased">
     <!-- Importando o Componente Toast -->
     <x-toast />
+    <!-- Importando o Componente Notification -->
+    <x-notification />
 
     @if (session('success'))
         SUCCESS: {{ session('success') }} <BR>
@@ -50,18 +52,6 @@
 
         <!-- Page Content -->
         <main>
-            {{-- No seu layout principal, adicione o código para exibir notificações --}}
-            @if (Auth::check())
-                <div class="flex mr-3 mt-3">
-                    @foreach (Auth::user()->unreadNotifications as $notification)
-                        <div class=" flex-row bg-gray-100 border border-gray-400 text-gray-700 px-4 py-3 rounded ">
-                            --1) {{ $notification->created_at }} <br>
-                            --2) {{ $notification->data['message'] }}
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
             {{ $slot }}
         </main>
     </div>
