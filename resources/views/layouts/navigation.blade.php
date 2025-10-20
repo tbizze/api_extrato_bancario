@@ -33,6 +33,30 @@
 
             <!-- Settings Dropdown -->
             <div class="hidden sm:flex sm:items-center sm:ms-6">
+
+                <div class="flex mr-1">
+
+                    <!-- Botão para abrir modal -->
+                    <button type="button" onclick="notificationHandler(false)"
+                        class="relative flex-shrink-0 rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800">
+                        <span class="sr-only">View notifications</span>
+                        <svg class="h-6 w-6 mr-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        <!-- Exibe quantidade de notificações não lidas -->
+                        @if (auth()->user()->unreadNotifications->count() > 0)
+                            <div
+                                class="absolute -top-1 -right-1 flex rounded-full w-4 h-4 bg-red-500 text-white leading-none text-xs items-center justify-center">
+                                {{ auth()->user()->unreadNotifications->count() }}
+                            </div>
+                        @endif
+                    </button>
+
+
+                </div>
+
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button
