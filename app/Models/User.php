@@ -11,6 +11,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property \Illuminate\Database\Eloquent\Collection<int, DatabaseNotification> $notifications
+ * @property \Illuminate\Database\Eloquent\Collection<int, DatabaseNotification> $unreadNotifications
+ * @property \Illuminate\Database\Eloquent\Collection<int, DatabaseNotification> $readNotifications
+ *
+ * @method \Illuminate\Database\Eloquent\Relations\MorphMany notifications()
+ * @method \Illuminate\Database\Eloquent\Relations\MorphMany unreadNotifications()
+ * @method \Illuminate\Database\Eloquent\Relations\MorphMany readNotifications()
+ */
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens;

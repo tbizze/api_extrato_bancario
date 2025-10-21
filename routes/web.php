@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\{BankAccountController, CompanyController, CredentialBankAccountController, HomeController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
+use App\Http\Controllers\{BankAccountController, CompanyController, CredentialBankAccountController, HomeController, NotificationController, PagbankController, ProfileController, SantanderController, TransactionController, TransactionImportController, TransparenciaController, UserController};
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,6 +67,11 @@ Route::middleware(['auth'])->group(function () {
     // Importação de transações.
     Route::post('bank-accounts/{bank_account}/transactions/import', [TransactionImportController::class, 'import'])
         ->name('bank-accounts.transactions.import');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 Route::get('toast', [HomeController::class, 'testNotification']);
